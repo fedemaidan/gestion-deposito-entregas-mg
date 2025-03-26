@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: sorby_development
+      POSTGRES_PASSWORD: sorby_development
+      POSTGRES_DB: GestionDepositoEntregasMg
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: imetalgrande
+    restart: always
+    depends_on:
+      - db
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: "postgres://sorby_development:sorby_development@db:5432/GestionDepositoEntregasMg"
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+    command: ["npm", "start"]
+
+volumes:
+  postgres_data:
