@@ -23,7 +23,7 @@ module.exports = async function CrearRuta(userId, data, sock) {
     const { Cliente: ClienteNombre, Direccion_Entrega, Localidad } = detalle;
 
     // Construir el mensaje
-    let output = `📋 *Detalles de la hoja de ruta seleccionada* 📋\n\n`;
+    let output = `📋 *Detalles de la hoja de ruta seleccionada*\n\n`;
     output += `🆔 *ID:* ${ID_CAB}\n📅 *Fecha:* ${Fecha}\n🕒 *Hora de salida:* ${Hora_Salida}\n🔒 *Estado:* ${Cerrado ? "Cerrado" : "Abierto"}\n`;
     output += `\n━━━━━━━━━━━━━━━━━━\n\n`;
     output += `🚛 *Chofer:* ${Chofer?.Nombre || "No asignado"}\n📞 *Teléfono:* ${Chofer?.Telefono || "No disponible"}\n🔖 *Patente:* ${Chofer?.Patente || "No disponible"}\n`;

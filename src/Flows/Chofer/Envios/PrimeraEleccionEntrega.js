@@ -49,7 +49,7 @@ module.exports = async function PrimeraEleccionEntrega(userId, message, sock) {
         await sock.sendMessage(userId, { text: mensaje });
         console.log("✅ Mensaje enviado correctamente.");
 
-        await sock.sendMessage(userId, { text: "\n Cuando la entrega finalice, indícalo enviando un mensaje con el resultado de la entrega." });
+        await sock.sendMessage(userId, { text: 'Cuando la entrega finalice, indícalo enviando un mensaje con el resultado de la entrega:\n- Reprogramado 📅\n- Entregado OK ✅\n- Entregado NOK ❌' });
 
         // Guardar nuevo estado del chofer en BD
         await GuardarEstadoChofer(Chofer.Telefono + "@s.whatsapp.net", hojaRuta, "SecuenciaEntrega");
