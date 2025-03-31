@@ -7,8 +7,6 @@ const FlowMapper = require('../../FlowControl/FlowMapper');
 
 const messageResponder = async (messageType, msg, sock, sender) =>
 {
-
-
     switch (messageType) {
         case 'text':
         case 'text_extended': {

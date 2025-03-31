@@ -7,11 +7,6 @@ class FlowMapper {
     async handleMessage(userId, message, sock, messageType) {
         const flow = FlowManager.getFlow(userId);
 
-
-        //LOGICA PARA SABER SI ES CHOFER Y DE SER ASI
-        //OBTENGO EL FLOW DESDE MI BD Y DIRECTAMENTE ENTRA AL PASO EN CONCRETO DE SU FLUJO
-        
-
         if (flow)
         {
             switch (flow.flowName)

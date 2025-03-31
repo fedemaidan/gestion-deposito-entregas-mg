@@ -4,9 +4,6 @@ const IndicarComienzo = require('../../../../Utiles/Funciones/Logistica/IniciarR
 
 module.exports = async function ConfirmarOModificarRuta(userId, message, sock) {
 
-    console.log("USER ID ------------------------------------------------")
-    console.log(userId)
-    console.log("------------------------------------------------")
     const data = await opcionElegida(message);
 
     if (data.data.Eleccion == "1") {

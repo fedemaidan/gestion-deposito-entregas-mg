@@ -45,9 +45,9 @@ module.exports = async function IndicarComienzo(hojaRuta, sock) {
             mensajeChofer += "\n🚛 *Elije tu proximo destino y manos a la obra*";
             await enviarMensaje(Chofer.Telefono + "@s.whatsapp.net", mensajeChofer, sock);
 
-            //guardar el step y flow del chofer en la bd para evitar que se caiga su flujo a lo largo del dia evitando perdida de datos.
-            await GuardarEstadoChofer(Chofer.Telefono + "@s.whatsapp.net", hojaRuta,"PrimeraEleccionEntrega")
 
+            //guardar el step y flow del chofer en la bd para evitar que se caiga su flujo a lo largo del dia evitando perdida de datos.
+            await GuardarEstadoChofer(Chofer.Telefono + "@s.whatsapp.net", hojaRuta, "PrimeraEleccionEntrega")
         } else {
             console.error("⚠️ No se pudo enviar mensaje al Chofer: Teléfono no disponible.");
         }

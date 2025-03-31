@@ -1,12 +1,11 @@
-const FlowManager = require('../../../FlowControl/FlowManager');
 const GuardarEstadoChofer = require('../../../Utiles/Funciones/Chofer/GuardarEstadoChofer');
-const BuscarHoja = require('../../../Utiles/Funciones/Logistica/IniciarRuta/BuscarHoja');
+const ObtenerEstadoChofer = require('../../../Utiles/Funciones/Chofer/ObtenerEstadoChofer');
 
 module.exports = async function PrimeraEleccionEntrega(userId, message, sock) {
     try {
-        // Obtener la hoja de ruta desde flowData
-        //let hojaRuta = await BuscarHoja(userId, "1e08a890");
-        const hojaRuta = FlowManager.userFlows[userId]?.flowData;
+
+        const estado = ObtenerEstadoChofer(userId)
+        const hojaRuta = estado.hojaDeRuta
 
         if (!hojaRuta || !hojaRuta.Hoja_Ruta || hojaRuta.Hoja_Ruta.length === 0) {
             console.error("❌ Error: Hoja de ruta no proporcionada o vacía.");
@@ -24,7 +23,8 @@ module.exports = async function PrimeraEleccionEntrega(userId, message, sock) {
             console.log("✅ Todas las entregas han sido completadas.");
 
             // Guardar el estado del chofer con el flujo finalizado
-            await GuardarEstadoChofer(Chofer.Telefono + "@s.whatsapp.net", hojaRuta, "EntregasFinalizadas");
+            //await GuardarEstadoChofer(Chofer.Telefono + "@s.whatsapp.net", hojaRuta, "EntregasFinalizadas");
+            FlowManager.setFlow(userId, "ENTREGACHOFER", "EntregasFinalizadas", data)
 
             const mensajeFinalizado = `✅ *Todas las entregas han sido completadas.* 🚚✨\nGracias por tu trabajo, ¡hasta la próxima!`;
             await sock.sendMessage(userId, { text: mensajeFinalizado });
@@ -51,8 +51,10 @@ module.exports = async function PrimeraEleccionEntrega(userId, message, sock) {
 
         await sock.sendMessage(userId, { text: 'Cuando la entrega finalice, indícalo enviando un mensaje con el resultado de la entrega:\n- Reprogramado 📅\n- Entregado OK ✅\n- Entregado NOK ❌' });
 
+        /*
         // Guardar nuevo estado del chofer en BD
         await GuardarEstadoChofer(Chofer.Telefono + "@s.whatsapp.net", hojaRuta, "SecuenciaEntrega");
+        */
 
     } catch (error) {
         console.error("❌ Error en PrimeraEleccionEntrega:", error);

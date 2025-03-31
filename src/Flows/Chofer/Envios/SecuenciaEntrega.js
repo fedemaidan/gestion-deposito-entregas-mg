@@ -3,8 +3,12 @@ const GuardarEstadoChofer = require('../../../Utiles/Funciones/Chofer/GuardarEst
 
 module.exports = async function SecuenciaEntrega(userId, message, sock) {
     try {
-        // Obtener la hoja de ruta desde flowData
-        let hojaRuta = FlowManager.userFlows[userId]?.flowData;
+
+        const estado = ObtenerEstadoChofer(userId)
+        
+        const estado = ObtenerEstadoChofer(userId)
+
+        const hojaRuta = estado.hojaDeRuta
 
         console.log(hojaRuta);
 
@@ -37,7 +41,7 @@ module.exports = async function SecuenciaEntrega(userId, message, sock) {
 
         if (entregasPendientes.length === 0) {
             console.log("✅ Todas las entregas han sido completadas.");
-            await GuardarEstadoChofer(Chofer.Telefono + "@s.whatsapp.net", hojaRuta, "EntregasFinalizadas");
+           // await GuardarEstadoChofer(Chofer.Telefono + "@s.whatsapp.net", hojaRuta, "EntregasFinalizadas");
 
             const mensajeFinalizado = `✅ *Todas las entregas han sido completadas.* 🚚✨\nGracias por tu trabajo, ¡hasta la próxima!`;
             await sock.sendMessage(userId, { text: mensajeFinalizado });
