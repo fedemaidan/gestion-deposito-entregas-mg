@@ -87,14 +87,14 @@ async function BuscarHoja(userId, text) {
             ],
             "Cliente": {
                 "Nombre": "Cactus / Bauhaus",
-                "Telefono": "5491149380799"
+                "Telefono": "5491131641937" //telefono de metal
             },
             "Vendedor": {
                 "Nombre": "TROYANOVICH: NICOLAS FABIAN",
-                "Telefono": "5491149380799"
+                "Telefono": "5491134456193" //telefono de metal
             },
             "Chofer": {
-                "Nombre": "FRIAS: BRAIAN MAURO",
+                "Nombre": "FRIAS: BRAIAN MAURO", //alexis
                 "Telefono": "5491149380799",
                 "Patente": "OPN 326"
             }

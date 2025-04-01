@@ -20,7 +20,7 @@ module.exports = async function IndicarComienzo(hojaRuta, sock) {
 
         // 🏡 📩 Mensaje para el Cliente
         if (Cliente?.Telefono) {
-            const mensajeCliente = `📦 *Estimado/a ${Cliente.Nombre},* su pedido llegará *hoy*. 📅\nLo mantendremos informado sobre su estado y ubicación en tiempo real. 🚚✨`;
+            const mensajeCliente = `📦 *Estimado/a ${Cliente.Nombre},* su pedido llegará *hoy*. 📅\nLo mantendremos informado sobre su estado. 🚚✨`;
             await enviarMensaje(Cliente.Telefono+"@s.whatsapp.net", mensajeCliente, sock);
         } else {
             console.error("⚠️ No se pudo enviar mensaje al Cliente: Teléfono no disponible.");
