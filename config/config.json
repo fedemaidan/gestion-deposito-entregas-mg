@@ -1,10 +1,10 @@
 {
-  "development": {
+"development": {
     "username": "sorby_development",
     "password": "sorby_development",
-    "database": "sorby_development",
-    "host": "10.200.10.6",
-    "port": 5432,
+    "database": "MGDB",
+    "host": "host.docker.internal",
+    "port": 5440,
     "dialect": "postgres"
   },
   "test": {

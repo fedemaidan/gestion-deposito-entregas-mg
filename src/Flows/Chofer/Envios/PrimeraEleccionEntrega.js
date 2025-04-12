@@ -1,11 +1,13 @@
-const GuardarEstadoChofer = require('../../../Utiles/Funciones/Chofer/GuardarEstadoChofer');
-const ObtenerEstadoChofer = require('../../../Utiles/Funciones/Chofer/ObtenerEstadoChofer');
-
+const GuardarFlow = require('../../../Utiles/Funciones/FuncionesFlowmanager/GuardarFlow');
+const ObtenerFlow = require('../../../Utiles/Funciones/FuncionesFlowmanager/ObtenerFlow');
+const FlowManager = require('../../../FlowControl/FlowManager');
 module.exports = async function PrimeraEleccionEntrega(userId, message, sock) {
     try {
+        await ObtenerFlow(userId);
+        const hojaRuta = FlowManager.userFlows[userId]?.flowData;
 
-        const estado = ObtenerEstadoChofer(userId)
-        const hojaRuta = estado.hojaDeRuta
+        console.log("HOJA DE RUTA: EN PRIMERAELECCION ENTREGA:")
+        console.log(hojaRuta)
 
         if (!hojaRuta || !hojaRuta.Hoja_Ruta || hojaRuta.Hoja_Ruta.length === 0) {
             console.error("❌ Error: Hoja de ruta no proporcionada o vacía.");
@@ -16,15 +18,17 @@ module.exports = async function PrimeraEleccionEntrega(userId, message, sock) {
         const { Detalles = [] } = hoja;
         const { Chofer } = hojaRuta;
 
-        // Filtrar entregas no entregadas
+        // Filtrar entregas no entregadas según orden original
         const entregasPendientes = Detalles.filter(detalle => detalle.Estado === "No entregado");
 
         if (entregasPendientes.length === 0) {
             console.log("✅ Todas las entregas han sido completadas.");
 
-            // Guardar el estado del chofer con el flujo finalizado
-            //await GuardarEstadoChofer(Chofer.Telefono + "@s.whatsapp.net", hojaRuta, "EntregasFinalizadas");
-            FlowManager.setFlow(userId, "ENTREGACHOFER", "EntregasFinalizadas", data)
+            FlowManager.resetFlow(userId);
+
+            //Avisar logistica de trabajo terminado:
+
+            //-------
 
             const mensajeFinalizado = `✅ *Todas las entregas han sido completadas.* 🚚✨\nGracias por tu trabajo, ¡hasta la próxima!`;
             await sock.sendMessage(userId, { text: mensajeFinalizado });
@@ -39,24 +43,30 @@ module.exports = async function PrimeraEleccionEntrega(userId, message, sock) {
             return;
         }
 
-        // Obtener el detalle según la posición (restamos 1 porque los arrays comienzan en 0)
-        const detalleEncontrado = entregasPendientes[numeroPedido - 1];
+        // Buscar el detalle seleccionado
+        const detalleSeleccionado = entregasPendientes[numeroPedido - 1];
 
-        // Construir mensaje de respuesta
-        const mensaje = `📌 *En proceso* \n\n🆔 *ID Detalle:* ${detalleEncontrado.ID_DET}\n🏢 *Cliente:* ${detalleEncontrado.Cliente}\n📍 *Dirección:* ${detalleEncontrado.Direccion_Entrega}\n🌆 *Localidad:* ${detalleEncontrado.Localidad}\n📄 *Estado:* ${detalleEncontrado.Estado}`;
+        // Eliminarlo del array Detalles original
+        hoja.Detalles = hoja.Detalles.filter(det => det.ID_DET !== detalleSeleccionado.ID_DET);
 
-        // Enviar mensaje de respuesta
+        // Guardarlo como Detalle_Actual (siempre como array por estructura uniforme)
+        hoja.Detalle_Actual = [detalleSeleccionado];
+
+        // Enviar mensaje de detalle actual
+        const mensaje = `📌 *En proceso* \n\n🆔 *ID Detalle:* ${detalleSeleccionado.ID_DET}\n🏢 *Cliente:* ${detalleSeleccionado.Cliente}\n📍 *Dirección:* ${detalleSeleccionado.Direccion_Entrega}\n🌆 *Localidad:* ${detalleSeleccionado.Localidad}\n📄 *Estado:* ${detalleSeleccionado.Estado}`;
         await sock.sendMessage(userId, { text: mensaje });
-        console.log("✅ Mensaje enviado correctamente.");
 
-        await sock.sendMessage(userId, { text: 'Cuando la entrega finalice, indícalo enviando un mensaje con el resultado de la entrega:\n- Reprogramado 📅\n- Entregado OK ✅\n- Entregado NOK ❌' });
+        await sock.sendMessage(userId, {
+            text: 'Cuando la entrega finalice, indícalo enviando un mensaje con el resultado de la entrega:\n- Reprogramado 📅\n- Entregado OK ✅\n- Entregado NOK ❌'
+        });
 
-        /*
-        // Guardar nuevo estado del chofer en BD
-        await GuardarEstadoChofer(Chofer.Telefono + "@s.whatsapp.net", hojaRuta, "SecuenciaEntrega");
-        */
+        // Guardar nuevo estado actualizado
+        await GuardarFlow(Chofer.Telefono + "@s.whatsapp.net", hojaRuta, "SecuenciaEntrega");
+
+        console.log("✅ Detalle seleccionado y guardado en Detalle_Actual.");
 
     } catch (error) {
         console.error("❌ Error en PrimeraEleccionEntrega:", error);
     }
 };
+

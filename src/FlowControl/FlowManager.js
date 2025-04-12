@@ -1,24 +1,35 @@
-﻿class FlowManager {
+const GuardarFlow = require('../Utiles/Funciones/FuncionesFlowmanager/GuardarFlow')
+const ObtenerFlow = require('../Utiles/Funciones/FuncionesFlowmanager/ObtenerFlow')
+class FlowManager {
     constructor() {
         this.userFlows = {}; // Almacena los flujos de cada usuario
     }
     // Establecer el flujo y paso inicial para un usuario
 
-    setFlow(userId, flowName, Step, flowData = {}) {
+    async setFlow(userId, flowName, Step, flowData = {}) {
         console.log(Step)
         const actualFlowData = this.userFlows[userId]?.flowData || {};
         const _flowData = { ...actualFlowData, ...flowData };
         this.userFlows[userId] = { flowName, currentStep: Step, flowData: _flowData }
+        await GuardarFlow(userId, _flowData, Step, flowName)
     }
 
     // Obtener el flujo actual de un usuario
-    getFlow(userId) {
+    async getFlow(userId) {
+        if (!this.userFlows[userId]) {
+            const estado = await ObtenerFlow(userId);
+            if (estado) {
+                const { flowData, currentStep, flowName } = estado;
+                this.userFlows[userId] = { flowData, currentStep, flowName };
+            }
+        }
         return this.userFlows[userId] || null;
     }
 
     // Reiniciar el flujo de un usuario
-    resetFlow(userId) {
+    async resetFlow(userId) {
         delete this.userFlows[userId];
+        await EliminarFlow(userId); // <-- llamada a la capa intermedia
     }
 }
 module.exports = new FlowManager();

@@ -1,20 +1,18 @@
 services:
   db:
     image: postgres:15
-    container_name: BDMG
+    container_name: MGBD
     restart: always
     environment:
-      POSTGRES_DB: sorby_development
+      POSTGRES_DB: MGDB
       POSTGRES_USER: sorby_development
       POSTGRES_PASSWORD: sorby_development
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5440:5432"  # expone la DB a host.docker.internal
     networks:
-      sorbydata-static-network:
-        ipv4_address: 10.200.10.6  # IP fija para la base de datos
-    # No mapeamos el puerto en este caso
-    # ports:
-    #   - "5432:5432"  # No es necesario si no vamos a acceder desde el host
+      - sorbynet
 
   app:
     build:
@@ -26,22 +24,18 @@ services:
       - db
     environment:
       NODE_ENV: development
-      DATABASE_URL: "postgres://sorby_development:sorby_development@10.200.10.6:5432/sorby_development"
+      DATABASE_URL: "postgres://sorby_development:sorby_development@host.docker.internal:5440/MGDB"
     ports:
       - "3000:3000"
     volumes:
       - .:/app
     command: ["npm", "start"]
     networks:
-      sorbydata-static-network:
-        ipv4_address: 10.200.10.5  # IP fija para la app
+      - sorbynet
 
 volumes:
   postgres_data:
 
 networks:
-  sorbydata-static-network:
-    ipam:
-      driver: default
-      config:
-        - subnet: "10.200.10.0/24"
+  sorbynet:
+    driver: bridge

@@ -8,7 +8,7 @@ const opciones = [
         cargo:"logistica",
         data:
         {
-           id_cabezera: "numero de id de la hoja de ruta a la que se hace referencia en el mensaje."
+           id_cab: "numero de id de la hoja de ruta a la que se hace referencia en el mensaje."
         }
     },
     {
