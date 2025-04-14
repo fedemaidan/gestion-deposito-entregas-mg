@@ -8,12 +8,6 @@ class FlowMapper {
     async handleMessage(userId, message, sock, messageType) {
         let flow = await FlowManager.getFlow(userId);
 
-        // Si no se encuentra en memoria, lo buscamos en la base de datos
-        if (!flow) {
-            await ObtenerFlow(userId);
-            flow = await FlowManager.getFlow(userId);
-        }
-
         if (flow && flow.flowName) {
             switch (flow.flowName) {
                 case 'INICIARRUTA':

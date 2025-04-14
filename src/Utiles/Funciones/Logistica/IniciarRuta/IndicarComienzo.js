@@ -1,5 +1,6 @@
 const enviarMensaje = require('../IniciarRuta/EnviarMensaje');
 const GuardarEstadoChofer = require('../../FuncionesFlowmanager/GuardarFlow');
+const FlowManager = require('../../../../FlowControl/FlowManager');
 
 module.exports = async function IndicarComienzo(hojaRuta, sock) {
     try {
@@ -22,6 +23,10 @@ module.exports = async function IndicarComienzo(hojaRuta, sock) {
         await enviarMensajeChofer(Chofer, ID_CAB, Detalles, hojaRuta, sock);
 
         console.log("✅ Todos los mensajes han sido enviados correctamente.");
+        //SOY EL CHOFER MANITO
+
+        FlowManager.setFlow(Chofer.Telefono + "@s.whatsapp.net", "ENTREGACHOFER", "PrimeraEleccionEntrega", hojaRuta);
+
         return { Success: true, id: ID_CAB };
     } catch (error) {
         console.error("❌ Error en IndicarComienzo:", error);
@@ -33,7 +38,7 @@ module.exports = async function IndicarComienzo(hojaRuta, sock) {
 async function enviarMensajesClientes(Detalles, sock) {
     for (const detalle of Detalles) {
         if (detalle.Telefono) {
-            const mensaje = `📦 *Estimado/a ${detalle.Cliente},* su pedido llegará *hoy*. 📅\nLo mantendremos informado sobre su estado y ubicación en tiempo real. 🚚✨`;
+            const mensaje = `📦 *Estimado/a ${detalle.Cliente},* su pedido llegará *hoy*. 📅\nLo mantendremos informado sobre su estado 🚚✨`;
             await enviarMensaje(detalle.Telefono + "@s.whatsapp.net", mensaje, sock);
         } else {
             console.warn(`⚠️ Teléfono no disponible para el cliente ${detalle.Cliente}`);
@@ -64,12 +69,10 @@ async function enviarMensajeChofer(Chofer, ID_CAB, Detalles, hojaRuta, sock) {
         mensaje += "\n🚛 *Elegí tu próximo destino y manos a la obra*";
         await enviarMensaje(Chofer.Telefono + "@s.whatsapp.net", mensaje, sock);
 
-        await GuardarEstadoChofer(
-            Chofer.Telefono + "@s.whatsapp.net",
-            hojaRuta,
-            "PrimeraEleccionEntrega",
-            "ENTREGACHOFER"
-        );
+        console.log("ENTRO AL ENVIAR MENSAJE DEL CHOFER Y GUARDO EL ESTADO BIEN")
+
+    
+
     } else {
         console.error("⚠️ No se pudo enviar mensaje al Chofer: Teléfono no disponible.");
     }

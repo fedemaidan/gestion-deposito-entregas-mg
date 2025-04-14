@@ -1,10 +1,5 @@
 const GetType = require('../../../Utiles/Mensajes/GetType');
-// Asegurate de importar estas funciones en tu entorno real
-// const saveImageToStorage = require(...);
-// const FlowMapper = require(...);
-// const downloadMedia = require(...);
-// const transcribeImage = require(...);
-// const transcribeAudio = require(...);
+const { saveImageToStorage } = require('../../Firebase/storageHandler');
 
 module.exports = async function GuardarRemito(userId, message, sock) {
     try {
@@ -27,7 +22,7 @@ module.exports = async function GuardarRemito(userId, message, sock) {
 
                     const urls = await saveImageToStorage(ImageMessage, sender, "image");
 
-                    return urls.imagenFirebase;
+                    return urls;
 
                 } catch (error) {
                     console.error("Error al procesar la imagen:", error);
@@ -67,7 +62,7 @@ module.exports = async function GuardarRemito(userId, message, sock) {
                         return;
                     }
 
-                    return transcripcion.imagenFirebase;
+                    return transcripcion;
                 } catch (error) {
                     console.error("❌ Error al procesar el documento:", error);
                     await sock.sendMessage(sender, { text: "❌ Hubo un error al procesar tu documento." });

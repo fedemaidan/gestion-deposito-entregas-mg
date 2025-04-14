@@ -1,9 +1,12 @@
-const ObtenerFlow = require('../../../Utiles/Funciones/FuncionesFlowmanager/ObtenerFlow');
 const FlowManager = require('../../../FlowControl/FlowManager');
+const AnalizarEstado = require('../../../Utiles/Funciones/Chofer/AnalizarEstado');
 
 module.exports = async function FinalizarEntrega(userId, message, sock) {
     try {
-        await ObtenerFlow(userId);
+
+        const data = await AnalizarEstado(message)
+
+        await FlowManager.getFlow(userId);
         const hojaRuta = FlowManager.userFlows[userId]?.flowData;
 
         if (!hojaRuta || !hojaRuta.Hoja_Ruta || hojaRuta.Hoja_Ruta.length === 0) {
@@ -20,40 +23,43 @@ module.exports = async function FinalizarEntrega(userId, message, sock) {
             });
             return;
         }
-
-        const estadoNumero = parseInt(message.trim(), 10);
         const detalle = Detalle_Actual[0];
 
         let nuevoEstado;
         let nextStep;
 
-        switch (estadoNumero) {
-            case 1:
+        console.log("❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌")
+        console.log(data.data.Eleccion)
+        console.log("❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌")
+
+
+        switch (data.data.Eleccion) {
+            case "1":
                 nuevoEstado = "Entregado OK";
-                nextStep = "EntregaOk";
+                nextStep = "EntregaOK";
                 await sock.sendMessage(userId, {
                     text: `✅ Se seleccionó *${nuevoEstado}*.\n📸 Por favor, subí la *foto del remito* para finalizar.`
                 });
                 break;
-            case 2:
+            case "2":
                 nuevoEstado = "Entregado NOK";
-                nextStep = "EntregadoNok";
+                nextStep = "Aclaracion";
                 await sock.sendMessage(userId, {
                     text: `⚠️ Se seleccionó *${nuevoEstado}*.\n📝 Por favor, contanos *qué pasó* con esta entrega.`
                 });
                 break;
-            case 3:
+            case "3":
                 nuevoEstado = "No entregado";
-                nextStep = "NoEntregado";
+                nextStep = "Aclaracion";
                 await sock.sendMessage(userId, {
                     text: `🚫 Se seleccionó *${nuevoEstado}*.\n📝 Por favor, indicá *el motivo* por el cual no se entregó.`
                 });
                 break;
-            case 4:
+            case "4":
                 nuevoEstado = "Reprogramado";
                 nextStep = "Reprogramado";
                 await sock.sendMessage(userId, {
-                    text: `🔁 Se seleccionó *${nuevoEstado}*.\n📨 De acuerdo, *enviando avisos al vendedor y cliente*.`
+                    text: `🔁 Se seleccionó *${nuevoEstado}*.\n📨 De acuerdo, *enviando avisos al vendedor y cliente*, ¿por que se reprogramo?.`
                 });
                 break;
             default:
@@ -63,11 +69,13 @@ module.exports = async function FinalizarEntrega(userId, message, sock) {
                 return;
         }
 
-        // ✅ Guardar el nuevo estado en el detalle actual
+        // Solo actualiza el estado
         detalle.Estado = nuevoEstado;
 
-        // ✅ Avanzar el flujo y guardar la actualización
+        // Redireccionar al siguiente paso del flujo
         FlowManager.setFlow(userId, "ENTREGACHOFER", nextStep, hojaRuta);
+
+        console.log(`✅ Estado actualizado a "${nuevoEstado}" y redireccionado al paso ${nextStep}`);
 
     } catch (error) {
         console.error("❌ Error en FinalizarEntrega:", error);
@@ -76,3 +84,4 @@ module.exports = async function FinalizarEntrega(userId, message, sock) {
         });
     }
 };
+

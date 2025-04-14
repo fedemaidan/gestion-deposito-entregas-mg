@@ -18,8 +18,8 @@ class FlowManager {
     async getFlow(userId) {
         if (!this.userFlows[userId]) {
             const estado = await ObtenerFlow(userId);
-            if (estado) {
-                const { flowData, currentStep, flowName } = estado;
+            if (estado.Success) {
+                const { flowData, currentStep, flowName } = estado.data;
                 this.userFlows[userId] = { flowData, currentStep, flowName };
             }
         }
@@ -28,8 +28,8 @@ class FlowManager {
 
     // Reiniciar el flujo de un usuario
     async resetFlow(userId) {
-        delete this.userFlows[userId];
         await EliminarFlow(userId); // <-- llamada a la capa intermedia
+        delete this.userFlows[userId];
     }
 }
 module.exports = new FlowManager();

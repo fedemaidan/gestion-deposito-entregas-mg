@@ -2,8 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { downloadMediaMessage } = require('@whiskeysockets/baileys');
-const { convertPdfToJpeg } = require('../Chatgpt/convertPdfToJpeg');
-const { admin } = require('../Chatgpt/firebaseUtils'); // Configuración de Firebase Admin
+const { convertPdfToJpeg } = require('../Firebase/convertPdfToJpeg');
+const { admin } = require('../Firebase/firebaseUtils'); // Configuración de Firebase Admin
 
 async function saveImageToStorage(message, senderPhone, messageType) {
     try {

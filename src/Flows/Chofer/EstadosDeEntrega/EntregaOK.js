@@ -1,10 +1,12 @@
-const ObtenerFlow = require('../../../Utiles/Funciones/FuncionesFlowmanager/ObtenerFlow');
 const FlowManager = require('../../../FlowControl/FlowManager');
 const EnviarMensaje = require('../../../Utiles/Funciones/Logistica/IniciarRuta/EnviarMensaje');
-const GuardarRemito = require('../../../Utiles/Funciones/Chofer/GuardarRemito');
+const enviarRemitoWhatsApp = require('../../../Utiles/Firebase/EnviarConformidad');
+const EnviarSiguienteEntrega = require('../../../Utiles/Funciones/Chofer/EnviarSiguienteEntrega');
+
+
 module.exports = async function EntregaOK(userId, message, sock) {
     try {
-        await ObtenerFlow(userId);
+        await FlowManager.getFlow(userId)
         const hojaRuta = FlowManager.userFlows[userId]?.flowData;
 
         if (!hojaRuta || !hojaRuta.Hoja_Ruta || hojaRuta.Hoja_Ruta.length === 0) {
@@ -25,21 +27,13 @@ module.exports = async function EntregaOK(userId, message, sock) {
         const detalle = Detalle_Actual[0];
 
         // 📸 Lógica para subir imagen a Firebase y obtener la URL pública
-        let webUrl = null;
 
-        webUrl = await GuardarRemito(message)
-
-        // TODO: Lógica real de subida (ejemplo con Firebase)
-        // const buffer = await downloadMediaMessage(message);
-        // webUrl = await uploadToFirebase(buffer, `remitos/${detalle.ID_DET}.jpg`);
-
-
-
-
-
-
+        let webUrl = message;
+     
         // ✅ Guardamos la URL en el JSON
         detalle.Path = webUrl;
+        await EnviarMensaje(detalle.Telefono + "@s.whatsapp.net", `✅ La entrega fue realizada con exito` ,sock)
+        await enviarRemitoWhatsApp(webUrl.imagenlocal, sock, detalle.Telefono + "@s.whatsapp.net",)
 
         // 🧹 Quitamos el detalle de Detalle_Actual y lo pasamos a Detalles_Completados
         hoja.Detalle_Actual = []; // siempre debe estar vacío tras la entrega
@@ -48,24 +42,25 @@ module.exports = async function EntregaOK(userId, message, sock) {
         // 🔄 Actualizamos el flow en memoria
         FlowManager.setFlow(userId, "ENTREGACHOFER", "PrimeraEleccionEntrega", hojaRuta);
 
-        // 🔄 Google Sheet ----- (acá podés llamar a la función que actualice los cambios en Sheets)
+        // 🔄 Google Sheet ----- (llamar a la función que actualice los cambios en Sheets)
+
 
         // await actualizarEntregaEnSheet(hoja.ID_CAB, detalle);
+
 
         // ✅ Mensajes
         const mensajeChofer = "✅ Foto del remito recibida y guardada correctamente.";
         const mensajeVendedor = `📦 La entrega al cliente *${detalle.Cliente}* fue realizada con éxito.`;
-        const mensajeCliente = `🧾 ¡Hola! 📦 Tu entrega fue realizada con éxito. Te compartimos el remito:\n${webUrl}`;
 
         if (detalle.Telefono_vendedor) {
-            await EnviarMensaje(detalle.Telefono_vendedor, mensajeVendedor, sock);
-        }
-
-        if (detalle.Telefono) {
-            await EnviarMensaje(detalle.Telefono, mensajeCliente, sock);
+            await EnviarMensaje(detalle.Telefono_vendedor + "@s.whatsapp.net", mensajeVendedor, sock);
         }
 
         await sock.sendMessage(userId, { text: mensajeChofer });
+
+        await EnviarSiguienteEntrega(userId,hojaRuta,sock)
+
+        FlowManager.setFlow(userId, "ENTREGACHOFER", "PrimeraEleccionEntrega", hojaRuta);
 
     } catch (error) {
         console.error("❌ Error en EntregaOK:", error);

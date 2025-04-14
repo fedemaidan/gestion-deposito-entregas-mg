@@ -1,5 +1,4 @@
 const FlowService = require('../../../services/flow/flowService');
-const FlowManager = require('../../../FlowControl/FlowManager');
 
 module.exports = async function ObtenerFlow(userId) {
     try {
@@ -18,8 +17,6 @@ module.exports = async function ObtenerFlow(userId) {
 
         // Pisar el flow actual en memoria con el de base de datos
         const { flowname, step, hojaDeRuta } = flowData;
-
-        await FlowManager.setFlow(userId, flowname, step, hojaDeRuta);
 
         console.log("✅ Flow encontrado y pisado en FlowManager:", flowData);
         return { Success: true, data: flowData };
