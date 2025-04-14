@@ -1,66 +1,87 @@
 const FlowManager = require('../../../FlowControl/FlowManager');
-const GuardarEstadoChofer = require('../../../Utiles/Funciones/Chofer/GuardarEstadoChofer');
+const AnalizarEstado = require('../../../Utiles/Funciones/Chofer/AnalizarEstado');
 
-module.exports = async function SecuenciaEntrega(userId, message, sock) {
+module.exports = async function FinalizarEntrega(userId, message, sock) {
     try {
-        // Obtener la hoja de ruta desde flowData
-        let hojaRuta = FlowManager.userFlows[userId]?.flowData;
 
-        console.log(hojaRuta);
+        const data = await AnalizarEstado(message)
+
+        await FlowManager.getFlow(userId);
+        const hojaRuta = FlowManager.userFlows[userId]?.flowData;
 
         if (!hojaRuta || !hojaRuta.Hoja_Ruta || hojaRuta.Hoja_Ruta.length === 0) {
-            console.error("❌ Error: Hoja de ruta no proporcionada o vacía.");
+            console.error("❌ Hoja de ruta vacía o no encontrada.");
             return;
         }
 
         const hoja = hojaRuta.Hoja_Ruta[0];
-        const { Detalles = [] } = hoja;
-        const { Chofer } = hojaRuta;
+        const { Detalle_Actual = [] } = hoja;
 
-        // Encontrar la entrega con estado "No entregado"
-        const detalleNoEntregado = Detalles.find(detalle => detalle.Estado === "No entregado");
-
-        if (!detalleNoEntregado) {
-            console.error("⚠️ No hay ninguna entrega con estado 'No entregado'.");
+        if (Detalle_Actual.length === 0) {
+            await sock.sendMessage(userId, {
+                text: "⚠️ No hay entrega en curso. Por favor, seleccioná una entrega primero."
+            });
             return;
         }
+        const detalle = Detalle_Actual[0];
 
-        // Marcar la entrega como "Entrega OK"
-        detalleNoEntregado.Estado = "Entrega OK";
-        console.log(`✅ Entrega marcada como OK: ${detalleNoEntregado.ID_DET}`);
+        let nuevoEstado;
+        let nextStep;
 
-        // Guardar la hoja de ruta actualizada en flowData
-        FlowManager.userFlows[userId].flowData = hojaRuta;
+        console.log("❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌")
+        console.log(data.data.Eleccion)
+        console.log("❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌")
 
-        // Filtrar entregas aún pendientes
-        const entregasPendientes = Detalles.filter(detalle => detalle.Estado === "No entregado");
 
-        if (entregasPendientes.length === 0) {
-            console.log("✅ Todas las entregas han sido completadas.");
-            await GuardarEstadoChofer(Chofer.Telefono + "@s.whatsapp.net", hojaRuta, "EntregasFinalizadas");
-
-            const mensajeFinalizado = `✅ *Todas las entregas han sido completadas.* 🚚✨\nGracias por tu trabajo, ¡hasta la próxima!`;
-            await sock.sendMessage(userId, { text: mensajeFinalizado });
-            FlowManager.resetFlow(userId);
-            // RESETEAR FLUJO Y STEP DEL CHOFER
-            return;
+        switch (data.data.Eleccion) {
+            case "1":
+                nuevoEstado = "Entregado OK";
+                nextStep = "EntregaOK";
+                await sock.sendMessage(userId, {
+                    text: `✅ Se seleccionó *${nuevoEstado}*.\n📸 Por favor, subí la *foto del remito* para finalizar.`
+                });
+                break;
+            case "2":
+                nuevoEstado = "Entregado NOK";
+                nextStep = "Aclaracion";
+                await sock.sendMessage(userId, {
+                    text: `⚠️ Se seleccionó *${nuevoEstado}*.\n📝 Por favor, contanos *qué pasó* con esta entrega.`
+                });
+                break;
+            case "3":
+                nuevoEstado = "No entregado";
+                nextStep = "Aclaracion";
+                await sock.sendMessage(userId, {
+                    text: `🚫 Se seleccionó *${nuevoEstado}*.\n📝 Por favor, indicá *el motivo* por el cual no se entregó.`
+                });
+                break;
+            case "4":
+                nuevoEstado = "Reprogramado";
+                nextStep = "Reprogramado";
+                await sock.sendMessage(userId, {
+                    text: `🔁 Se seleccionó *${nuevoEstado}*.\n📨 De acuerdo, *enviando avisos al vendedor y cliente*, ¿por que se reprogramo?.`
+                });
+                break;
+            default:
+                await sock.sendMessage(userId, {
+                    text: "❗ *Opción no válida.* Escribí 1, 2, 3 o 4 para indicar el resultado de la entrega.\n\n1️⃣ Entregado OK\n2️⃣ Entregado NOK\n3️⃣ No entregado\n4️⃣ Reprogramado"
+                });
+                return;
         }
 
-        // Construir lista de entregas pendientes
-        let mensajePendientes = `📋 *Entregas pendientes:* \n`;
-        entregasPendientes.forEach((detalle, index) => {
-            mensajePendientes += `\n${index + 1}. 🆔 *${detalle.ID_DET}* - 📍 ${detalle.Direccion_Entrega}, ${detalle.Localidad}`;
-        });
+        // Solo actualiza el estado
+        detalle.Estado = nuevoEstado;
 
-        mensajePendientes += `\n\n⏳ *Envía el número de la siguiente entrega para continuar.*`;
+        // Redireccionar al siguiente paso del flujo
+        FlowManager.setFlow(userId, "ENTREGACHOFER", nextStep, hojaRuta);
 
-        // Enviar mensaje con entregas pendientes
-        await sock.sendMessage(userId, { text: mensajePendientes });
-
-        // Volver a la función `PrimeraEleccionEntrega`
-        await GuardarEstadoChofer(Chofer.Telefono + "@s.whatsapp.net", hojaRuta, "PrimeraEleccionEntrega");
+        console.log(`✅ Estado actualizado a "${nuevoEstado}" y redireccionado al paso ${nextStep}`);
 
     } catch (error) {
-        console.error("❌ Error en SecuenciaEntrega:", error);
+        console.error("❌ Error en FinalizarEntrega:", error);
+        await sock.sendMessage(userId, {
+            text: "💥 *Ocurrió un error al finalizar la entrega.*\nPor favor, intentá nuevamente o contactá a soporte."
+        });
     }
 };
+

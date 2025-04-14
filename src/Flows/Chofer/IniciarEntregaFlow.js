@@ -21,6 +21,9 @@ const IniciarEntregaFlow = {
 
         if (userId != null && sock != null) {
 
+            console.log("ACA ESTA EL STEP")
+            console.log(currentStep)
+
             // Y que EgresoMaterialSteps es un objeto que contiene tus funciones
             if (typeof IniciarEntregaSteps[currentStep] === 'function') {
                 await IniciarEntregaSteps[currentStep](userId, message, sock);

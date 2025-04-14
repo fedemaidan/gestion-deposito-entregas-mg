@@ -1,108 +1,69 @@
+const { obtenerHojaRutaPorID } = require('../../../../services/google/Sheets/hojaDeruta');
 
 async function BuscarHoja(userId, text) {
     try {
-        const detalle =
-        {
-            "Hoja_Ruta": [
-                {
-                    "ID_CAB": "1e08a890",
-                    "Fecha": "02/05/2024",
-                    "Hora_Salida": "07:30",
-                    "Cerrado": false,
-                    "Detalles": [
-                        {
-                            "ID_DET": "DET00010",
-                            "COD_CLI": "",
-                            "Cliente": "Numasol SRL",
-                            "Comprobante": {
-                                "Letra": "A",
-                                "Punto_Venta": "14",
-                                "Numero": "15072"
-                            },
-                            "Direccion_Entrega": "Av. Monteverde 4050",
-                            "Localidad": "Burzaco",
-                            "Observaciones": "",
-                            "Vendedor": "MANGINI VACCAREZZA: MATIAS",
-                            "Condicion_Pago": "CC",
-                            "Estado": "No entregado",
-                            "Incidencia": "Conforme completo",
-                            "Path": ""
-                        },
-                        {
-                            "ID_DET": "DET00009",
-                            "COD_CLI": "",
-                            "Cliente": "Norberto Paez",
-                            "Comprobante": {
-                                "Letra": "B",
-                                "Punto_Venta": "14",
-                                "Numero": "32397"
-                            },
-                            "Direccion_Entrega": "Barbier 691",
-                            "Localidad": "Monte Grande",
-                            "Observaciones": "",
-                            "Vendedor": "Fariñas Gil: Jeyfred Jose",
-                            "Condicion_Pago": "Pagado",
-                            "Estado": "No entregado",
-                            "Incidencia": "Conforme completo",
-                            "Path": ""
-                        },
-                        {
-                            "ID_DET": "DET00003",
-                            "COD_CLI": "",
-                            "Cliente": "Enrique Romero",
-                            "Comprobante": {
-                                "Letra": "B",
-                                "Punto_Venta": "14",
-                                "Numero": "32386"
-                            },
-                            "Direccion_Entrega": "Brandsen 3124",
-                            "Localidad": "Monte Grande",
-                            "Observaciones": "",
-                            "Vendedor": "VALLARIO: GUSTAVO IVAN",
-                            "Condicion_Pago": "Pagado",
-                            "Estado": "No entregado",
-                            "Incidencia": "Conforme completo",
-                            "Path": ""
-                        },
-                        {
-                            "ID_DET": "DET00004",
-                            "COD_CLI": "",
-                            "Cliente": "Enrique Romero",
-                            "Comprobante": {
-                                "Letra": "B",
-                                "Punto_Venta": "14",
-                                "Numero": "32387"
-                            },
-                            "Direccion_Entrega": "Brandsen 3124",
-                            "Localidad": "Monte Grande",
-                            "Observaciones": "",
-                            "Vendedor": "VALLARIO: GUSTAVO IVAN",
-                            "Condicion_Pago": "Pagado",
-                            "Estado": "No entregado",
-                            "Incidencia": "Conforme completo",
-                            "Path": ""
-                        }
-                    ]
-                }
-            ],
-            "Cliente": {
-                "Nombre": "Cactus / Bauhaus",
-                "Telefono": "5491131641937" //telefono de metal
-            },
-            "Vendedor": {
-                "Nombre": "TROYANOVICH: NICOLAS FABIAN",
-                "Telefono": "5491134456193" //telefono de metal
-            },
-            "Chofer": {
-                "Nombre": "FRIAS: BRAIAN MAURO", //alexis
-                "Telefono": "5491149380799",
-                "Patente": "OPN 326"
-            }
+        if (!userId || !text) {
+            throw new Error("userId o text no proporcionado");
         }
 
-        return detalle;
+        // Buscar hoja en Google Sheets por ID_CAB
+        const cabeceraConDetalles = await obtenerHojaRutaPorID(text);
+
+        if (!cabeceraConDetalles) {
+            return { Success: false, msg: `No se encontró hoja con ID ${text}` };
+        }
+
+        // Estructura del JSON final
+        const hojaRuta = {
+            Hoja_Ruta: [
+                {
+                    ID_CAB: text,
+                    Fecha: cabeceraConDetalles.cabecera.Fecha || "",
+                    Hora_Salida: cabeceraConDetalles.cabecera.Hora_Salida || "",
+                    Cerrado: cabeceraConDetalles.cabecera.Cerrado === "TRUE",
+                    Detalles: cabeceraConDetalles.detalles.map(det => ({
+                        ID_DET: det.ID_DET || "",
+                        COD_CLI: det.COD_CLI || "",
+                        Cliente: det.Cliente || "",
+                        Telefono: det.Cli_Telefono || "",
+                        Comprobante: {
+                            Letra: det.Letra || "",
+                            Punto_Venta: det.Punto_Venta || "",
+                            Numero: det.Numero || "",
+                        },
+                        Direccion_Entrega: det.Direccion_Entrega || "",
+                        Localidad: det.Localidad || "",
+                        Observaciones: det.Observaciones || "",
+                        Vendedor: det.Vendedor || "",
+                        Telefono_vendedor: det.Ven_Telefono || "",
+                        Condicion_Pago: det.Condicion_Pago || "",
+                        Estado: det.Estado || "",
+                        Incidencia: det.Incidencia || "",
+                        Path: det.Path || "",
+                    })),
+                    Detalle_Actual: [], // <- aquí iran la actual entrega
+                    Detalles_Completados: [] // <- aquí podés ir empujando los entregados
+                }
+            ],
+            Chofer: {
+                Nombre: cabeceraConDetalles.cabecera.Chofer || "",
+                Telefono: cabeceraConDetalles.cabecera.Cho_Telefono || "",
+                Patente: cabeceraConDetalles.cabecera.Patente || ""
+            }
+        };
+
+
+        console.log("CABECERA:");
+        console.log(cabeceraConDetalles.cabecera);
+
+        console.log("DETALLES:");
+        console.log(cabeceraConDetalles.detalles);
+
+        return hojaRuta;
+
     } catch (error) {
-        console.error(`❌ Error al obetner la hoja`, error);
+        console.error(`❌ Error al obtener la hoja`, error);
+        return { Success: false, msg: error.message };
     }
 }
 

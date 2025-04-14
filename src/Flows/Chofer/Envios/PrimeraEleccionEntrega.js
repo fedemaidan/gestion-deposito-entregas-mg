@@ -1,11 +1,8 @@
 const FlowManager = require('../../../FlowControl/FlowManager');
-const GuardarEstadoChofer = require('../../../Utiles/Funciones/Chofer/GuardarEstadoChofer');
-const BuscarHoja = require('../../../Utiles/Funciones/Logistica/IniciarRuta/BuscarHoja');
 
 module.exports = async function PrimeraEleccionEntrega(userId, message, sock) {
     try {
-        // Obtener la hoja de ruta desde flowData
-        //let hojaRuta = await BuscarHoja(userId, "1e08a890");
+        await FlowManager.getFlow(userId);
         const hojaRuta = FlowManager.userFlows[userId]?.flowData;
 
         if (!hojaRuta || !hojaRuta.Hoja_Ruta || hojaRuta.Hoja_Ruta.length === 0) {
@@ -17,42 +14,36 @@ module.exports = async function PrimeraEleccionEntrega(userId, message, sock) {
         const { Detalles = [] } = hoja;
         const { Chofer } = hojaRuta;
 
-        // Filtrar entregas no entregadas
-        const entregasPendientes = Detalles.filter(detalle => detalle.Estado === "No entregado");
+        // Filtrar entregas pendientes
+        const entregasPendientes = [...Detalles];
 
-        if (entregasPendientes.length === 0) {
-            console.log("✅ Todas las entregas han sido completadas.");
-
-            // Guardar el estado del chofer con el flujo finalizado
-            await GuardarEstadoChofer(Chofer.Telefono + "@s.whatsapp.net", hojaRuta, "EntregasFinalizadas");
-
-            const mensajeFinalizado = `✅ *Todas las entregas han sido completadas.* 🚚✨\nGracias por tu trabajo, ¡hasta la próxima!`;
-            await sock.sendMessage(userId, { text: mensajeFinalizado });
-            return;
-        }
-
-        // Extraer el número del mensaje
+        // Extraer número del mensaje
         const numeroPedido = parseInt(message.match(/\d+/)?.[0], 10);
         if (isNaN(numeroPedido) || numeroPedido < 1 || numeroPedido > entregasPendientes.length) {
-            console.error(`⚠️ Número fuera de rango o no válido: ${message}`);
-            await sock.sendMessage(userId, { text: "⚠️ Número no válido. Por favor, ingresa un número válido de la lista." });
+            await sock.sendMessage(userId, { text: "⚠️ Número no válido. Por favor, ingresá un número válido de la lista." });
             return;
         }
 
-        // Obtener el detalle según la posición (restamos 1 porque los arrays comienzan en 0)
-        const detalleEncontrado = entregasPendientes[numeroPedido - 1];
+        // Seleccionar detalle
+        const detalleSeleccionado = entregasPendientes[numeroPedido - 1];
 
-        // Construir mensaje de respuesta
-        const mensaje = `📌 *En proceso* \n\n🆔 *ID Detalle:* ${detalleEncontrado.ID_DET}\n🏢 *Cliente:* ${detalleEncontrado.Cliente}\n📍 *Dirección:* ${detalleEncontrado.Direccion_Entrega}\n🌆 *Localidad:* ${detalleEncontrado.Localidad}\n📄 *Estado:* ${detalleEncontrado.Estado}`;
+        // Sacarlo de Detalles
+        hoja.Detalles = hoja.Detalles.filter(det => det.ID_DET !== detalleSeleccionado.ID_DET);
 
-        // Enviar mensaje de respuesta
+        // Ponerlo en Detalle_Actual
+        hoja.Detalle_Actual = [detalleSeleccionado];
+
+        // Mostrar información de entrega actual
+        const mensaje = `📌 *En proceso* \n\n🆔 *ID Detalle:* ${detalleSeleccionado.ID_DET}\n🏢 *Cliente:* ${detalleSeleccionado.Cliente}\n📍 *Dirección:* ${detalleSeleccionado.Direccion_Entrega}\n🌆 *Localidad:* ${detalleSeleccionado.Localidad}\n📄 *Estado:* ${detalleSeleccionado.Estado}`;
         await sock.sendMessage(userId, { text: mensaje });
-        console.log("✅ Mensaje enviado correctamente.");
 
-        await sock.sendMessage(userId, { text: 'Cuando la entrega finalice, indícalo enviando un mensaje con el resultado de la entrega:\n- 1.Entregado OK ✅\n- 2.Entregado NOK ❌\n- 3.Reprogramado 📅' });
+        await sock.sendMessage(userId, {
+            text: 'Cuando la entrega finalice, indícalo enviando un mensaje con el resultado de la entrega:\n1️⃣ Entregado OK ✅\n2️⃣ Entregado NOK ❌\n3️⃣ No entregado 🚫\n4️⃣ Reprogramado 🔁'
+        });
 
-        // Guardar nuevo estado del chofer en BD
-        await GuardarEstadoChofer(Chofer.Telefono + "@s.whatsapp.net", hojaRuta, "SecuenciaEntrega");
+        FlowManager.setFlow(userId, "ENTREGACHOFER", "SecuenciaEntrega", hojaRuta);
+
+        console.log("✅ Detalle movido a Detalle_Actual.");
 
     } catch (error) {
         console.error("❌ Error en PrimeraEleccionEntrega:", error);
