@@ -1,6 +1,6 @@
 // hojaDeruta.js
 const { updateRow } = require("../General"); // ajustá el path si es otro
-const moment = require("moment");
+const moment = require("moment-timezone");
 require('dotenv').config();
 const { google } = require('googleapis');
 
@@ -108,7 +108,7 @@ async function actualizarHoraSalidaCabecera(hojaRuta) {
         return;
     }
 
-    const horaActual = moment().format("HH:mm");
+    const horaActual = moment().tz("America/Argentina/Buenos_Aires").format("HH:mm");
 
     const valoresCabecera = [
         data.ID_CAB,
