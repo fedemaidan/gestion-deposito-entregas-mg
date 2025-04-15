@@ -1,5 +1,6 @@
 // hojaDeruta.js
-
+const { updateRow } = require("../General"); // ajustá el path si es otro
+const moment = require("moment");
 require('dotenv').config();
 const { google } = require('googleapis');
 
@@ -63,6 +64,95 @@ async function obtenerHojaRutaPorID(idCabecera) {
     }
 }
 
+async function actualizarDetalleActual(hojaRuta) {
+    const sheetId = process.env.GOOGLE_SHEET_ID;
+    const data = hojaRuta.Hoja_Ruta[0];
+    const detalle = data.Detalle_Actual[0]; // Solo uno, como dijiste
+
+    if (!detalle) {
+        console.log('No hay Detalle_Actual para actualizar.');
+        return;
+    }
+
+    const valoresDetalle = [
+        data.ID_CAB,
+        detalle.ID_DET || '',
+        detalle.COD_CLI || '',
+        detalle.Cliente || '',
+        detalle.Telefono || '',
+        detalle.Comprobante?.Letra || '',
+        detalle.Comprobante?.Punto_Venta || '',
+        detalle.Comprobante?.Numero || '',
+        detalle.Direccion_Entrega || '',
+        detalle.Localidad || '',
+        detalle.Observaciones || '',
+        detalle.Vendedor || '',
+        detalle.Telefono_vendedor || '',
+        detalle.Condicion_Pago || '',
+        detalle.Estado || '',
+        detalle.Incidencia || '',
+        detalle.Path || ''
+    ];
+
+    await updateRow(sheetId, valoresDetalle, 'Detalle!A1:Z', 1, detalle.ID_DET); // ID_DET en columna B (índice 1)
+
+    console.log(`Detalle actualizado para ID_DET: ${detalle.ID_DET}`);
+}
+
+async function actualizarHoraSalidaCabecera(hojaRuta) {
+    const sheetId = process.env.GOOGLE_SHEET_ID;
+    const data = hojaRuta.Hoja_Ruta[0];
+
+    if (!data?.ID_CAB) {
+        console.log("Falta ID_CAB para actualizar hora de salida.");
+        return;
+    }
+
+    const horaActual = moment().format("HH:mm");
+
+    const valoresCabecera = [
+        data.ID_CAB,
+        data.Fecha || '',
+        hojaRuta.Chofer?.Nombre || '',
+        hojaRuta.Chofer?.Telefono || '',
+        hojaRuta.Chofer?.Patente || '',
+        horaActual, // Hora Salida
+        data.Cerrado ? 'TRUE' : 'FALSE',
+        '' // Print
+    ];
+
+    await updateRow(sheetId, valoresCabecera, 'Cabecera!A1:Z', 0, data.ID_CAB);
+    console.log(`🕒 Hora de salida actualizada: ${horaActual}`);
+}
+
+async function cerrarHojaDeRuta(hojaRuta) {
+    const sheetId = process.env.GOOGLE_SHEET_ID;
+    const data = hojaRuta.Hoja_Ruta[0];
+
+    if (!data?.ID_CAB) {
+        console.log('Falta ID_CAB para cerrar hoja de ruta.');
+        return;
+    }
+
+    const valoresCabecera = [
+        data.ID_CAB,
+        data.Fecha || '',
+        hojaRuta.Chofer?.Nombre || '',
+        hojaRuta.Chofer?.Telefono || '',
+        hojaRuta.Chofer?.Patente || '',
+        data.Hora_Salida || '',
+        'TRUE', // Cerrado = TRUE
+        '' // Print (si no lo usás, dejalo así)
+    ];
+
+    await updateRow(sheetId, valoresCabecera, 'Cabecera!A1:Z', 0, data.ID_CAB);
+
+    console.log(`✅ Hoja de ruta con ID_CAB ${data.ID_CAB} cerrada.`);
+}
+
 module.exports = {
+    cerrarHojaDeRuta,
+    actualizarDetalleActual,
+    actualizarHoraSalidaCabecera,
     obtenerHojaRutaPorID
 };

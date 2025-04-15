@@ -1,4 +1,6 @@
 const enviarMensaje = require('../../../Utiles/Funciones/Logistica/IniciarRuta/EnviarMensaje');
+const { cerrarHojaDeRuta } = require('../../../services/google/Sheets/hojaDeruta');
+const FlowManager = require('../../../FlowControl/FlowManager');
 
 async function EnviarSiguienteEntrega(choferNumero, hojaRuta, sock) {
     try {
@@ -15,8 +17,13 @@ async function EnviarSiguienteEntrega(choferNumero, hojaRuta, sock) {
         // Si no hay entregas pendientes, enviamos un mensaje
         if (Detalles.length === 0) {
             console.log("✅ Todas las entregas han sido completadas.");
+
             const mensajeFinalizado = `✅ *Todas las entregas han sido completadas.* 🚚✨\nGracias por tu trabajo, ¡hasta la próxima!`;
             await sock.sendMessage(choferNumero, { text: mensajeFinalizado });
+
+            // Cerrar hoja de ruta en Google Sheets
+            await cerrarHojaDeRuta(hojaRuta);
+
             await FlowManager.resetFlow(userId);
             return;
         }

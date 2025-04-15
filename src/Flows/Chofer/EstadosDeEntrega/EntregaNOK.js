@@ -2,6 +2,7 @@ const FlowManager = require('../../../FlowControl/FlowManager');
 const EnviarMensaje = require('../../../Utiles/Funciones/Logistica/IniciarRuta/EnviarMensaje');
 const enviarRemitoWhatsApp = require('../../../Utiles/Firebase/EnviarConformidad');
 const EnviarSiguienteEntrega = require('../../../Utiles/Funciones/Chofer/EnviarSiguienteEntrega');
+const { actualizarDetalleActual } = require('../../../services/google/Sheets/hojaDeruta');
 
 module.exports = async function EntregaNOK(userId, message, sock) {
     try {
@@ -27,7 +28,7 @@ module.exports = async function EntregaNOK(userId, message, sock) {
 
         // ✅ Guardamos la URL del remito en el detalle
         let webUrl = message;
-        detalle.Path = webUrl;
+        detalle.Path = webUrl.imagenFirebase;
 
         // ✅ CHOFER
         await EnviarMensaje(detalle.Telefono + "@s.whatsapp.net", `✅ Foto del remito y aclaración guardadas correctamente.`, sock);
@@ -43,6 +44,9 @@ module.exports = async function EntregaNOK(userId, message, sock) {
             await EnviarMensaje(detalle.Telefono_vendedor + "@s.whatsapp.net", mensajeVendedor, sock);
         }
 
+        // 🔄 Actualizar Google Sheet si es necesario
+        await actualizarDetalleActual(hojaRuta)
+
         // 🔄 Pasamos el detalle a completados
         hoja.Detalle_Actual = [];
         hoja.Detalles_Completados.push(detalle);
@@ -50,8 +54,7 @@ module.exports = async function EntregaNOK(userId, message, sock) {
         // 🔄 Actualizamos el flow en memoria
         FlowManager.setFlow(userId, "ENTREGACHOFER", "PrimeraEleccionEntrega", hojaRuta);
 
-        // 🔄 Actualizar Google Sheet si es necesario
-        // await actualizarEntregaEnSheet(hoja.ID_CAB, detalle);
+ 
 
         // 🛵 Enviar siguiente entrega
         await EnviarSiguienteEntrega(userId, hojaRuta, sock);

@@ -28,10 +28,6 @@ module.exports = async function FinalizarEntrega(userId, message, sock) {
         let nuevoEstado;
         let nextStep;
 
-        console.log("❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌")
-        console.log(data.data.Eleccion)
-        console.log("❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌")
-
 
         switch (data.data.Eleccion) {
             case "1":
@@ -49,7 +45,7 @@ module.exports = async function FinalizarEntrega(userId, message, sock) {
                 });
                 break;
             case "3":
-                nuevoEstado = "No entregado";
+                nuevoEstado = "Rechazado";
                 nextStep = "Aclaracion";
                 await sock.sendMessage(userId, {
                     text: `🚫 Se seleccionó *${nuevoEstado}*.\n📝 Por favor, indicá *el motivo* por el cual no se entregó.`
@@ -64,7 +60,7 @@ module.exports = async function FinalizarEntrega(userId, message, sock) {
                 break;
             default:
                 await sock.sendMessage(userId, {
-                    text: "❗ *Opción no válida.* Escribí 1, 2, 3 o 4 para indicar el resultado de la entrega.\n\n1️⃣ Entregado OK\n2️⃣ Entregado NOK\n3️⃣ No entregado\n4️⃣ Reprogramado"
+                    text: '❗ *Opción no válida.* Escribí 1, 2, 3 o 4 para indicar el resultado de la entrega.\n\n1️⃣ Entregado OK ✅\n2️⃣ Entregado NOK ⚠️\n3️⃣ Rechazado ❌\n4️⃣ Cancelado 🚫'
                 });
                 return;
         }

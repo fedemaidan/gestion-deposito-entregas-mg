@@ -1,6 +1,7 @@
 const FlowManager = require('../../../FlowControl/FlowManager');
 const EnviarMensaje = require('../../../Utiles/Funciones/Logistica/IniciarRuta/EnviarMensaje');
 const EnviarSiguienteEntrega = require('../../../Utiles/Funciones/Chofer/EnviarSiguienteEntrega');
+const { actualizarDetalleActual } = require('../../../services/google/Sheets/hojaDeruta');
 
 module.exports = async function Reprogramado(userId, message, sock) {
     try {
@@ -27,12 +28,13 @@ module.exports = async function Reprogramado(userId, message, sock) {
         // ✅ Guardamos el motivo de la reprogramación como observación
         detalle.Observaciones = message;
 
+
+        await actualizarDetalleActual(hojaRuta)
         // 🧹 Quitamos el detalle de Detalle_Actual y lo pasamos a Detalles_Completados
         hoja.Detalle_Actual = []; // debe estar vacío tras la entrega
         hoja.Detalles_Completados.push(detalle);
 
       
-
         // ✅ MENSAJES
 
         // Chofer
@@ -51,6 +53,7 @@ module.exports = async function Reprogramado(userId, message, sock) {
         }
 
         // Siguiente entrega
+        
         await EnviarSiguienteEntrega(userId, hojaRuta, sock);
 
         // 🔄 Actualizamos el flow en memoria

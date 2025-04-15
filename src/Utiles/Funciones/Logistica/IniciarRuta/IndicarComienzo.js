@@ -1,5 +1,4 @@
 const enviarMensaje = require('../IniciarRuta/EnviarMensaje');
-const GuardarEstadoChofer = require('../../FuncionesFlowmanager/GuardarFlow');
 const FlowManager = require('../../../../FlowControl/FlowManager');
 
 module.exports = async function IndicarComienzo(hojaRuta, sock) {

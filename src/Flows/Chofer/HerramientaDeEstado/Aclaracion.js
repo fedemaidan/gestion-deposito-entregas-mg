@@ -1,5 +1,5 @@
 const FlowManager = require('../../../FlowControl/FlowManager');
-
+const { actualizarDetalleActual } = require('../../../services/google/Sheets/hojaDeruta');
 module.exports = async function Aclaracion(userId, message, sock) {
     try {
         await FlowManager.getFlow(userId)
@@ -36,6 +36,7 @@ module.exports = async function Aclaracion(userId, message, sock) {
         });
 
         // Opcional: Llamar a la función que actualice los cambios en Sheets (si es necesario)
+        await actualizarDetalleActual(hojaRuta)
         // await actualizarEntregaEnSheet(hoja.ID_CAB, detalle);
 
         await sock.sendMessage(userId, {text: `📸 Por favor, subí la *foto del remito* para finalizar.`});

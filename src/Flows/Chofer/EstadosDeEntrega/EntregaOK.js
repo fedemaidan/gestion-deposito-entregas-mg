@@ -2,7 +2,7 @@ const FlowManager = require('../../../FlowControl/FlowManager');
 const EnviarMensaje = require('../../../Utiles/Funciones/Logistica/IniciarRuta/EnviarMensaje');
 const enviarRemitoWhatsApp = require('../../../Utiles/Firebase/EnviarConformidad');
 const EnviarSiguienteEntrega = require('../../../Utiles/Funciones/Chofer/EnviarSiguienteEntrega');
-
+const {actualizarDetalleActual} = require('../../../services/google/Sheets/hojaDeruta');
 
 module.exports = async function EntregaOK(userId, message, sock) {
     try {
@@ -31,22 +31,20 @@ module.exports = async function EntregaOK(userId, message, sock) {
         let webUrl = message;
      
         // ✅ Guardamos la URL en el JSON
-        detalle.Path = webUrl;
+        detalle.Path = webUrl.imagenFirebase;
+
         await EnviarMensaje(detalle.Telefono + "@s.whatsapp.net", `✅ La entrega fue realizada con exito` ,sock)
         await enviarRemitoWhatsApp(webUrl.imagenlocal, sock, detalle.Telefono + "@s.whatsapp.net",)
 
+
+        // 🔄 Google Sheet ----- (llamar a la función que actualice los cambios en Sheets)
+        await actualizarDetalleActual(hojaRuta)
         // 🧹 Quitamos el detalle de Detalle_Actual y lo pasamos a Detalles_Completados
         hoja.Detalle_Actual = []; // siempre debe estar vacío tras la entrega
         hoja.Detalles_Completados.push(detalle);
 
         // 🔄 Actualizamos el flow en memoria
         FlowManager.setFlow(userId, "ENTREGACHOFER", "PrimeraEleccionEntrega", hojaRuta);
-
-        // 🔄 Google Sheet ----- (llamar a la función que actualice los cambios en Sheets)
-
-
-        // await actualizarEntregaEnSheet(hoja.ID_CAB, detalle);
-
 
         // ✅ Mensajes
         const mensajeChofer = "✅ Foto del remito recibida y guardada correctamente.";
@@ -61,6 +59,9 @@ module.exports = async function EntregaOK(userId, message, sock) {
         await EnviarSiguienteEntrega(userId,hojaRuta,sock)
 
         FlowManager.setFlow(userId, "ENTREGACHOFER", "PrimeraEleccionEntrega", hojaRuta);
+
+
+        
 
     } catch (error) {
         console.error("❌ Error en EntregaOK:", error);

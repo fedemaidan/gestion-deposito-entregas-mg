@@ -1,5 +1,5 @@
 const FlowManager = require('../../../FlowControl/FlowManager');
-
+const { actualizarHoraSalidaCabecera } = require('../../../services/google/Sheets/hojaDeruta');
 module.exports = async function PrimeraEleccionEntrega(userId, message, sock) {
     try {
         await FlowManager.getFlow(userId);
@@ -33,12 +33,32 @@ module.exports = async function PrimeraEleccionEntrega(userId, message, sock) {
         // Ponerlo en Detalle_Actual
         hoja.Detalle_Actual = [detalleSeleccionado];
 
+        if (
+            hoja.Detalle_Actual.length === 1 && // recién se asignó
+            (!hoja.Detalles_Completados || hoja.Detalles_Completados.length === 0)
+        ) {
+            await actualizarHoraSalidaCabecera(hojaRuta);
+        }
+
+        // Construir texto del comprobante
+        const comprobante = detalleSeleccionado.Comprobante;
+        const comprobanteTexto = comprobante && comprobante.Letra && comprobante.Punto_Venta && comprobante.Numero
+            ? `${comprobante.Letra} ${comprobante.Punto_Venta}-${comprobante.Numero}`
+            : "--";
+
         // Mostrar información de entrega actual
-        const mensaje = `📌 *En proceso* \n\n🆔 *ID Detalle:* ${detalleSeleccionado.ID_DET}\n🏢 *Cliente:* ${detalleSeleccionado.Cliente}\n📍 *Dirección:* ${detalleSeleccionado.Direccion_Entrega}\n🌆 *Localidad:* ${detalleSeleccionado.Localidad}\n📄 *Estado:* ${detalleSeleccionado.Estado}`;
+        const mensaje = `📌 *En proceso* 
+
+🆔 *ID Detalle:* ${detalleSeleccionado.ID_DET}
+🏢 *Cliente:* ${detalleSeleccionado.Cliente}
+📍 *Dirección:* ${detalleSeleccionado.Direccion_Entrega}
+🌆 *Localidad:* ${detalleSeleccionado.Localidad}
+📄 *Comprobante:* ${comprobanteTexto}`;
+
         await sock.sendMessage(userId, { text: mensaje });
 
         await sock.sendMessage(userId, {
-            text: 'Cuando la entrega finalice, indícalo enviando un mensaje con el resultado de la entrega:\n1️⃣ Entregado OK ✅\n2️⃣ Entregado NOK ❌\n3️⃣ No entregado 🚫\n4️⃣ Reprogramado 🔁'
+            text: 'Cuando la entrega finalice, indícalo enviando un mensaje con el resultado de la entrega:\n1️⃣ Entregado OK ✅\n2️⃣ Entregado NOK ⚠️\n3️⃣ Rechazado ❌\n4️⃣ Cancelado 🚫'
         });
 
         FlowManager.setFlow(userId, "ENTREGACHOFER", "SecuenciaEntrega", hojaRuta);

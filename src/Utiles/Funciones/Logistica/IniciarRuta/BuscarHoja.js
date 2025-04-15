@@ -27,9 +27,9 @@ async function BuscarHoja(userId, text) {
                         Cliente: det.Cliente || "",
                         Telefono: det.Cli_Telefono || "",
                         Comprobante: {
-                            Letra: det.Letra || "",
-                            Punto_Venta: det.Punto_Venta || "",
-                            Numero: det.Numero || "",
+                            Letra: det.Comprobante_Letra || "",
+                            Punto_Venta: det.Comprobante_PV || "",
+                            Numero: det.Comprobante_Numero || "",
                         },
                         Direccion_Entrega: det.Direccion_Entrega || "",
                         Localidad: det.Localidad || "",
