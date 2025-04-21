@@ -1,14 +1,19 @@
 const FlowMapper = require('../../FlowControl/FlowMapper');
+const FlowManager = require('../../FlowControl/FlowManager');
 const { saveImageToStorage } = require('../Firebase/storageHandler');
-//const transcribeAudio = require('../Utiles/Chatgpt/transcribeAudio');
+const transcribeAudio = require('../Firebase/transcribeAudio');
 const downloadMedia = require('../Firebase/DownloadMedia');
 
 const messageResponder = async (messageType, msg, sock, sender) =>
 {
+   
     switch (messageType) {
         case 'text':
         case 'text_extended': {
             const text = msg.message.conversation || msg.message.extendedTextMessage?.text;
+
+            if (text == "RESET") { FlowManager.resetFlow(sender); console.log("⏳⏳⏳⏳FLOW ELIMINADO CON EXITO⏳⏳⏳⏳"); return }
+
             await FlowMapper.handleMessage(sender, text, sock, messageType);
             break;
         }

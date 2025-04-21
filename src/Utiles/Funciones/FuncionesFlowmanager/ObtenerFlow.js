@@ -7,19 +7,28 @@ module.exports = async function ObtenerFlow(userId) {
             return { Success: false, msg: "userId no proporcionado." };
         }
 
-        // Obtener el flow desde la base
-        const flowData = await FlowService.getFlowByUserId(userId);
+        const backup = await FlowService.getFlowByUserId(userId);
 
-        if (!flowData) {
+        if (!backup) {
             console.log("🚫 No se encontró flow para el userId:", userId);
             return { Success: false, msg: "No se encontró flow para este usuario." };
         }
 
-        // Pisar el flow actual en memoria con el de base de datos
-        const { flowname, step, hojaDeRuta } = flowData;
+        const { flow, step } = backup;
 
-        console.log("✅ Flow encontrado y pisado en FlowManager:", flowData);
-        return { Success: true, data: flowData };
+        console.log("✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅");
+
+        console.log(backup.flowData)
+
+        console.log("✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅");
+        return {
+            Success: true,
+            data: {
+                flowData:backup.flowData,
+                currentStep: step,
+                flowName: flow  // 👈 ahora sí mapea bien
+            }
+        };
     } catch (error) {
         console.error("❌ Error en ObtenerFlow:", error);
         return { Success: false, msg: error.message };

@@ -21,7 +21,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         flowData: {
             type: DataTypes.JSON,
-            allowNull: true
+            allowNull: true,
         },
         flow: {
             type: DataTypes.STRING,

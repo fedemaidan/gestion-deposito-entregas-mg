@@ -56,9 +56,6 @@ module.exports = async function Reprogramado(userId, message, sock) {
         
         await EnviarSiguienteEntrega(userId, hojaRuta, sock);
 
-        // 🔄 Actualizamos el flow en memoria
-        FlowManager.setFlow(userId, "ENTREGACHOFER", "PrimeraEleccionEntrega", hojaRuta);
-
     } catch (error) {
         console.error("❌ Error en Reprogramado:", error);
         await sock.sendMessage(userId, {

@@ -25,6 +25,19 @@ module.exports = async function CrearRuta(userId, data, sock) {
     const { ID_CAB, Fecha, Detalles = [], Hora_Salida, Cerrado } = hoja;
     const { Chofer } = hojaRuta;
 
+
+    // ACA CHAT VA EL IF CON EL TELEFONO DEL CHOFER:
+    const choferId = `${Chofer.Telefono}@s.whatsapp.net`;
+    const flowExistente = await FlowService.getFlowByUserId(choferId);
+
+    if (flowExistente) {
+        await sock.sendMessage(userId, { text: `⚠️ El chofer ${Chofer.Nombre} ya tiene una hoja abierta..` });
+        FlowManager.resetFlow(userId)
+        return;
+    }
+    //------------------------------------------------------------
+
+
     // Construir el mensaje principal
     let output = `📋 *Detalles de la hoja de ruta seleccionada*\n\n`;
     output += `🆔 *ID:* ${ID_CAB}\n📅 *Fecha:* ${Fecha}\n 🔒 *Estado:* ${Cerrado ? "Cerrado" : "Abierto"}\n`;
@@ -51,12 +64,3 @@ module.exports = async function CrearRuta(userId, data, sock) {
     // Guardar estado en el FlowManager
     FlowManager.setFlow(userId, "INICIARRUTA", "ConfirmarOModificarRuta", hojaRuta);
 };
-
-
-
-/* 
-// Enviar mensaje adicional al chofer
-let text = `📩 *Mensaje enviado al chofer*`;
-console.log(userId);
-await EnviarMensaje(userId, text, sock);
-*/

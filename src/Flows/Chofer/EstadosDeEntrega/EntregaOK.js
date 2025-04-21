@@ -56,12 +56,7 @@ module.exports = async function EntregaOK(userId, message, sock) {
 
         await sock.sendMessage(userId, { text: mensajeChofer });
 
-        await EnviarSiguienteEntrega(userId,hojaRuta,sock)
-
-        FlowManager.setFlow(userId, "ENTREGACHOFER", "PrimeraEleccionEntrega", hojaRuta);
-
-
-        
+        await EnviarSiguienteEntrega(userId, hojaRuta, sock)
 
     } catch (error) {
         console.error("❌ Error en EntregaOK:", error);

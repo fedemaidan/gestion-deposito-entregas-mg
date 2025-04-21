@@ -6,7 +6,12 @@ const ObtenerFlow = require('../Utiles/Funciones/FuncionesFlowmanager/ObtenerFlo
 
 class FlowMapper {
     async handleMessage(userId, message, sock, messageType) {
+
         let flow = await FlowManager.getFlow(userId);
+
+        console.log("------------------------------------ACTUAL flow------------------------------------")
+        console.log(flow)
+        console.log("------------------------------------------------------------------------")
 
         if (flow && flow.flowName) {
             switch (flow.flowName) {

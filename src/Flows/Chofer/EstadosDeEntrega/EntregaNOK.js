@@ -51,12 +51,8 @@ module.exports = async function EntregaNOK(userId, message, sock) {
         hoja.Detalle_Actual = [];
         hoja.Detalles_Completados.push(detalle);
 
-        // 🔄 Actualizamos el flow en memoria
-        FlowManager.setFlow(userId, "ENTREGACHOFER", "PrimeraEleccionEntrega", hojaRuta);
-
- 
-
-        // 🛵 Enviar siguiente entrega
+   
+        // 🛵 Enviar siguiente entrega Y GUARDAMOS FLOW DENTRO DE ESTA FUNCION.
         await EnviarSiguienteEntrega(userId, hojaRuta, sock);
 
     } catch (error) {
