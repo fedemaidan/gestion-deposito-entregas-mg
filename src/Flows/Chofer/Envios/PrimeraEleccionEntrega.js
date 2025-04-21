@@ -1,5 +1,6 @@
 const FlowManager = require('../../../FlowControl/FlowManager');
 const { actualizarHoraSalidaCabecera } = require('../../../services/google/Sheets/hojaDeruta');
+const { IndicarActual } = require('../../../services/google/Sheets/hojaDeruta');
 module.exports = async function PrimeraEleccionEntrega(userId, message, sock) {
     try {
         await FlowManager.getFlow(userId);
@@ -60,6 +61,8 @@ module.exports = async function PrimeraEleccionEntrega(userId, message, sock) {
         await sock.sendMessage(userId, {
             text: 'Cuando la entrega finalice, indícalo enviando un mensaje con el resultado de la entrega:\n1️⃣ Entregado OK ✅\n2️⃣ Entregado NOK ⚠️\n3️⃣ Rechazado ❌\n4️⃣ Cancelado 🚫'
         });
+
+        await IndicarActual(hoja.ID_CAB,detalleSeleccionado.ID_DET);
 
         FlowManager.setFlow(userId, "ENTREGACHOFER", "SecuenciaEntrega", hojaRuta);
 

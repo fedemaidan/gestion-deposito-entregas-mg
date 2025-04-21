@@ -3,6 +3,7 @@ const EnviarMensaje = require('../../../Utiles/Funciones/Logistica/IniciarRuta/E
 const enviarRemitoWhatsApp = require('../../../Utiles/Firebase/EnviarConformidad');
 const EnviarSiguienteEntrega = require('../../../Utiles/Funciones/Chofer/EnviarSiguienteEntrega');
 const { actualizarDetalleActual } = require('../../../services/google/Sheets/hojaDeruta');
+const RevisarDatos = require('../../../Utiles/Funciones/Chofer/RevisarDatos');
 
 module.exports = async function EntregaNOK(userId, message, sock) {
     try {
@@ -26,8 +27,18 @@ module.exports = async function EntregaNOK(userId, message, sock) {
 
         const detalle = Detalle_Actual[0];
 
-        // ✅ Guardamos la URL del remito en el detalle
-        let webUrl = message;
+        // 📦 Obtener datos actualizados de cliente y vendedor
+        const datosActualizados = await RevisarDatos(detalle.ID_DET, hoja.ID_CAB);
+
+        // Aplicamos los cambios si existen
+        if (datosActualizados) {
+            detalle.Telefono = datosActualizados.cliente.telefono || detalle.Telefono;
+            detalle.Cliente = datosActualizados.cliente.nombre || detalle.Cliente;
+            detalle.Telefono_vendedor = datosActualizados.vendedor.telefono || detalle.Telefono_vendedor;
+        }
+
+        // 📸 Subir imagen y guardar la URL
+        const webUrl = message;
         detalle.Path = webUrl.imagenFirebase;
 
         // ✅ CHOFER
@@ -45,14 +56,14 @@ module.exports = async function EntregaNOK(userId, message, sock) {
         }
 
         // 🔄 Actualizar Google Sheet si es necesario
-        await actualizarDetalleActual(hojaRuta)
+        await actualizarDetalleActual(hojaRuta);
 
-        // 🔄 Pasamos el detalle a completados
         hoja.Detalle_Actual = [];
         hoja.Detalles_Completados.push(detalle);
 
-   
-        // 🛵 Enviar siguiente entrega Y GUARDAMOS FLOW DENTRO DE ESTA FUNCION.
+        FlowManager.setFlow(userId, "ENTREGACHOFER", "PrimeraEleccionEntrega", hojaRuta);
+
+        // 🛵 Enviar siguiente entrega
         await EnviarSiguienteEntrega(userId, hojaRuta, sock);
 
     } catch (error) {

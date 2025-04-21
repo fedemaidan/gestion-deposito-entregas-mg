@@ -11,6 +11,52 @@ const auth = new google.auth.GoogleAuth({
 
 const sheets = google.sheets({ version: 'v4', auth });
 
+
+async function IndicarActual(idCabecera, idDetalle) {
+    const sheetId = process.env.GOOGLE_SHEET_ID;
+
+    try {
+        // Obtener la hoja de detalles
+        const detalleRes = await sheets.spreadsheets.values.get({
+            spreadsheetId: sheetId,
+            range: 'Detalle!A1:Z',
+        });
+
+        const detalleData = detalleRes.data.values;
+        const headersDet = detalleData[0];
+
+        // Buscar la fila que coincide con ID_CAB e ID_DET
+        const filaDetalle = detalleData.slice(1).find(row => row[0] === idCabecera && row[1] === idDetalle);
+
+        if (!filaDetalle) {
+            throw new Error(`No se encontró el detalle con ID_CAB = ${idCabecera} y ID_DET = ${idDetalle}`);
+        }
+
+        // Obtener índice de la columna "Estado" (suponiendo que es la columna 14, columna 'N')
+        const estadoIndex = headersDet.indexOf('Estado');
+        if (estadoIndex === -1) {
+            throw new Error('No se encontró la columna "Estado"');
+        }
+
+        // Actualizar la celda en la columna "Estado" con "ACTUAL"
+        filaDetalle[estadoIndex] = 'ACTUAL';
+
+        // Actualizar la hoja de Google con el nuevo valor
+        await sheets.spreadsheets.values.update({
+            spreadsheetId: sheetId,
+            range: `Detalle!A${detalleData.indexOf(filaDetalle) + 1}:Z${detalleData.indexOf(filaDetalle) + 1}`,
+            valueInputOption: 'RAW',
+            resource: {
+                values: [filaDetalle]
+            }
+        });
+
+        console.log(`✅ Se actualizó el estado de la fila con ID_CAB = ${idCabecera} y ID_DET = ${idDetalle} a "ACTUAL"`);
+    } catch (error) {
+        console.error('❌ Error al actualizar el estado:', error.message);
+    }
+}
+
 async function obtenerHojaRutaPorID(idCabecera) {
     const sheetId = process.env.GOOGLE_SHEET_ID;
 
@@ -158,6 +204,7 @@ async function cerrarHojaDeRuta(hojaRuta) {
     console.log(`✅ Hoja de ruta cerrada. Hora de salida: ${horaFinal || 'no registrada'}`);
 }
 module.exports = {
+    IndicarActual,
     cerrarHojaDeRuta,
     actualizarDetalleActual,
     actualizarHoraSalidaCabecera,

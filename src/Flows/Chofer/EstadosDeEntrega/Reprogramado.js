@@ -2,6 +2,7 @@ const FlowManager = require('../../../FlowControl/FlowManager');
 const EnviarMensaje = require('../../../Utiles/Funciones/Logistica/IniciarRuta/EnviarMensaje');
 const EnviarSiguienteEntrega = require('../../../Utiles/Funciones/Chofer/EnviarSiguienteEntrega');
 const { actualizarDetalleActual } = require('../../../services/google/Sheets/hojaDeruta');
+const RevisarDatos = require('../../../Utiles/Funciones/Chofer/RevisarDatos');
 
 module.exports = async function Reprogramado(userId, message, sock) {
     try {
@@ -25,16 +26,27 @@ module.exports = async function Reprogramado(userId, message, sock) {
 
         const detalle = Detalle_Actual[0];
 
+        // 📦 Obtener datos actualizados de cliente y vendedor
+        const datosActualizados = await RevisarDatos(detalle.ID_DET, hoja.ID_CAB);
+
+        // Aplicamos los cambios si existen
+        if (datosActualizados) {
+            detalle.Telefono = datosActualizados.cliente.telefono || detalle.Telefono;
+            detalle.Cliente = datosActualizados.cliente.nombre || detalle.Cliente;
+            detalle.Telefono_vendedor = datosActualizados.vendedor.telefono || detalle.Telefono_vendedor;
+        }
+
         // ✅ Guardamos el motivo de la reprogramación como observación
         detalle.Observaciones = message;
 
+        // 🔄 Actualizar hoja en Sheets
+        await actualizarDetalleActual(hojaRuta);
 
-        await actualizarDetalleActual(hojaRuta)
-        // 🧹 Quitamos el detalle de Detalle_Actual y lo pasamos a Detalles_Completados
-        hoja.Detalle_Actual = []; // debe estar vacío tras la entrega
+        hoja.Detalle_Actual = [];
         hoja.Detalles_Completados.push(detalle);
 
-      
+        FlowManager.setFlow(userId, "ENTREGACHOFER", "PrimeraEleccionEntrega", hojaRuta);
+
         // ✅ MENSAJES
 
         // Chofer
@@ -53,7 +65,6 @@ module.exports = async function Reprogramado(userId, message, sock) {
         }
 
         // Siguiente entrega
-        
         await EnviarSiguienteEntrega(userId, hojaRuta, sock);
 
     } catch (error) {
