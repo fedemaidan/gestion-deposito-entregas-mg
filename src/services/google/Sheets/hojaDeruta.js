@@ -134,22 +134,29 @@ async function cerrarHojaDeRuta(hojaRuta) {
         return;
     }
 
+    // Obtener hoja actual para conservar valores existentes
+    const { cabecera: cabeceraActual } = await obtenerHojaRutaPorID(data.ID_CAB);
+
+    const horaExistente = cabeceraActual['Hora Salida'] || '';
+
+    // Si no tiene hora guardada aún, usamos la del objeto si vino
+    const horaFinal = horaExistente || (data.Hora_Salida || '');
+
     const valoresCabecera = [
         data.ID_CAB,
-        data.Fecha || '',
-        hojaRuta.Chofer?.Nombre || '',
-        hojaRuta.Chofer?.Telefono || '',
-        hojaRuta.Chofer?.Patente || '',
-        data.Hora_Salida || '',
-        'TRUE', // Cerrado = TRUE
-        '' // Print (si no lo usás, dejalo así)
+        data.Fecha || cabeceraActual['Fecha'] || '',
+        hojaRuta.Chofer?.Nombre || cabeceraActual['Chofer'] || '',
+        hojaRuta.Chofer?.Telefono || cabeceraActual['Cho_Telefono'] || '',
+        hojaRuta.Chofer?.Patente || cabeceraActual['Patente'] || '',
+        horaFinal,
+        'TRUE', // Cerrado
+        cabeceraActual['Print'] || ''
     ];
 
     await updateRow(sheetId, valoresCabecera, 'Cabecera!A1:Z', 0, data.ID_CAB);
 
-    console.log(`✅ Hoja de ruta con ID_CAB ${data.ID_CAB} cerrada.`);
+    console.log(`✅ Hoja de ruta cerrada. Hora de salida: ${horaFinal || 'no registrada'}`);
 }
-
 module.exports = {
     cerrarHojaDeRuta,
     actualizarDetalleActual,

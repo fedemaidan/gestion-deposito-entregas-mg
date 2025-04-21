@@ -24,7 +24,7 @@ async function EnviarSiguienteEntrega(choferNumero, hojaRuta, sock) {
             // Cerrar hoja de ruta en Google Sheets
             await cerrarHojaDeRuta(hojaRuta);
 
-            await FlowManager.resetFlow(userId);
+            await FlowManager.resetFlow(choferNumero);
             return;
         }
 

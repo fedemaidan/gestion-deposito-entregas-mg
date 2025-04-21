@@ -36,7 +36,7 @@ async function BuscarHoja(userId, text) {
                         Observaciones: det.Observaciones || "",
                         Vendedor: det.Vendedor || "",
                         Telefono_vendedor: det.Ven_Telefono || "",
-                        Condicion_Pago: det.Condicion_Pago || "",
+                        Condicion_Pago: det.Condición_Pago|| "",
                         Estado: det.Estado || "",
                         Incidencia: det.Incidencia || "",
                         Path: det.Path || "",
@@ -52,14 +52,11 @@ async function BuscarHoja(userId, text) {
             }
         };
 
+        if (cabeceraConDetalles.cabecera.Cerrado === "TRUE") {
+            return { msg: "❌ Error la hoja de ruta se encuentra cerrada", operacion:false };
+        }
 
-        console.log("CABECERA:");
-        console.log(cabeceraConDetalles.cabecera);
-
-        console.log("DETALLES:");
-        console.log(cabeceraConDetalles.detalles);
-
-        return hojaRuta;
+        return { hojaRuta: hojaRuta, operacion:true };
 
     } catch (error) {
         console.error(`❌ Error al obtener la hoja`, error);
