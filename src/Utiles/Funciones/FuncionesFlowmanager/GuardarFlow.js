@@ -5,10 +5,6 @@ module.exports = async function GuardarFlow(userId, hojaDeRuta, step, flowname) 
         // Intentamos obtener el flow actual
         const flowExistente = await FlowService.getFlowByUserId(userId);
 
-        console.log("✅✅✅✅✅✅✅✅✅✅✅✅HOJA DE RUTA✅✅✅✅✅✅✅✅✅✅");
-        console.log(hojaDeRuta)
-        console.log("✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅");
-
         if (flowExistente) {
             // Actualizar si ya existe
             await FlowService.updateFlowByUserId(userId, {

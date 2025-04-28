@@ -48,6 +48,7 @@ module.exports = async function EntregaOK(userId, message, sock) {
         // Cliente
         await EnviarMensaje(detalle.Telefono + "@s.whatsapp.net", mensajeCliente, sock);
         await enviarRemitoWhatsApp(webUrl.imagenlocal, sock, detalle.Telefono + "@s.whatsapp.net");
+        FlowManager.resetFlow(detalle.Telefono + "@s.whatsapp.net")
 
         // Vendedor
         if (detalle.Telefono_vendedor) {

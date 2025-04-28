@@ -1,5 +1,6 @@
 const enviarMensaje = require('../IniciarRuta/EnviarMensaje');
 const FlowManager = require('../../../../FlowControl/FlowManager');
+const iniciarFlowsClientes = require('../IniciarRuta/IniciarClientes');
 
 module.exports = async function IndicarComienzo(hojaRuta, sock) {
     try {
@@ -43,6 +44,8 @@ async function enviarMensajesClientes(Detalles, sock) {
             console.warn(`⚠️ Teléfono no disponible para el cliente ${detalle.Cliente}`);
         }
     }
+    //no hace falta que sea inmediato.
+    await iniciarFlowsClientes(hojaRuta)
 }
 
 // 🧩 Función interna: mensaje al vendedor

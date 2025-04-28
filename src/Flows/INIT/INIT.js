@@ -26,7 +26,7 @@ const defaultFlow = {
                     break;
 
                 case "No comprendido":
-                    await sock.sendMessage(userId, { text: "No entendi tu mensaje, porfavor repitelo" });
+                    await sock.sendMessage(userId, { text: "😕 No comprendi tu mensaje,❌ o no poseés los permisos necesarios  para esta acción. Por favor, repetilo." });
                     FlowManager.resetFlow(userId)
                     break;
 

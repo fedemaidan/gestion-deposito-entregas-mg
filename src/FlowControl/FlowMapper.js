@@ -2,8 +2,7 @@ const FlowManager = require('../FlowControl/FlowManager');
 const IniciarRutaFlow = require('../Flows/Logistica/IniciarRutaFlow');
 const IniciarEntregaFlow = require('../Flows/Chofer/IniciarEntregaFlow');
 const defaultFlow = require('../Flows/INIT/INIT');
-const ObtenerFlow = require('../Utiles/Funciones/FuncionesFlowmanager/ObtenerFlow');
-
+const SolicitarContactoFlow = require('../Flows/Cliente/SolicitarContactoFlow');
 class FlowMapper {
     async handleMessage(userId, message, sock, messageType) {
 
@@ -21,6 +20,10 @@ class FlowMapper {
 
                 case 'ENTREGACHOFER':
                     await IniciarEntregaFlow.Handle(userId, message, flow.currentStep, sock, messageType);
+                    break;
+
+                case 'RECIBIRCLIENTE':
+                    await SolicitarContactoFlow.Handle(userId, message, flow.currentStep, sock, messageType);
                     break;
 
                 case 'DEFAULT':

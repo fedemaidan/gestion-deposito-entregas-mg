@@ -3,6 +3,7 @@ const EnviarMensaje = require('../../../Utiles/Funciones/Logistica/IniciarRuta/E
 const EnviarSiguienteEntrega = require('../../../Utiles/Funciones/Chofer/EnviarSiguienteEntrega');
 const { actualizarDetalleActual } = require('../../../services/google/Sheets/hojaDeruta');
 const RevisarDatos = require('../../../Utiles/Funciones/Chofer/RevisarDatos');
+const { enviarErrorPorWhatsapp } = require("../../../services/exepction/manejoErrores");
 
 module.exports = async function Reprogramado(userId, message, sock) {
     try {
@@ -13,7 +14,15 @@ module.exports = async function Reprogramado(userId, message, sock) {
             console.error("❌ Hoja de ruta vacía o no encontrada.");
             return;
         }
-
+        // 📦
+        // 📦
+        // 📦
+        // 📦
+        throw new Error("ERROR de capa 8 😂: ERROR DE PRUEBA Y AVISO A DEV's v1");
+        // 📦
+        // 📦
+        // 📦
+        // 📦
         const hoja = hojaRuta.Hoja_Ruta[0];
         const { Detalle_Actual = [], Detalles_Completados = [] } = hoja;
 
@@ -62,6 +71,7 @@ module.exports = async function Reprogramado(userId, message, sock) {
         const mensajeCliente = `📦 Hola! La entrega programada para hoy fue reprogramada.\n📝 *Motivo:* ${message}`;
         if (detalle.Telefono) {
             await EnviarMensaje(detalle.Telefono + "@s.whatsapp.net", mensajeCliente, sock);
+            FlowManager.resetFlow(detalle.Telefono + "@s.whatsapp.net")
         }
 
         // Siguiente entrega
@@ -69,6 +79,9 @@ module.exports = async function Reprogramado(userId, message, sock) {
 
     } catch (error) {
         console.error("❌ Error en Reprogramado:", error);
+
+        await enviarErrorPorWhatsapp(error, "metal grande", sock)
+
         await sock.sendMessage(userId, {
             text: "💥 Ocurrió un error al reprogramar la entrega. Por favor, intentá nuevamente."
         });

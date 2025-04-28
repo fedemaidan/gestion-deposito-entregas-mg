@@ -48,6 +48,7 @@ module.exports = async function EntregaNOK(userId, message, sock) {
         const mensajeCliente = `📦 Hola! Algo sucedió con la entrega. Te acerco el remito y la aclaración del chofer.\n\n📝 *Aclaración:* ${detalle.Observaciones || "Sin aclaraciones."}`;
         await EnviarMensaje(detalle.Telefono + "@s.whatsapp.net", mensajeCliente, sock);
         await enviarRemitoWhatsApp(webUrl.imagenlocal, sock, detalle.Telefono + "@s.whatsapp.net");
+        FlowManager.resetFlow(detalle.Telefono + "@s.whatsapp.net")
 
         // ✅ VENDEDOR - Notificamos problema
         const mensajeVendedor = `⚠️ Hubo un *problema en la entrega* al cliente *${detalle.Cliente}*.\n\n📝 *Aclaración del chofer:* ${detalle.Observaciones || "Sin observaciones."}`;
