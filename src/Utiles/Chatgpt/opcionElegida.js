@@ -9,6 +9,8 @@ const opcion =
     }
 }
 async function opcionElegida(mensajeCliente) {
+    //Opcion elegida es como analizar intencion pero solo analiza SI, NO, SALIR, CANCELAR. 
+    //esta hecho para un la eleccion de un menu simple.
 
     prompt = `
 Como bot de un sistema de control de stock, quiero identificar la intención del usuario y ejecutar la acción adecuada para gestionar correctamente la confirmación o cancelación de pedidos.

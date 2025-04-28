@@ -1,6 +1,6 @@
-const GuardarFlow = require('../Utiles/Funciones/FuncionesFlowmanager/GuardarFlow')
-const ObtenerFlow = require('../Utiles/Funciones/FuncionesFlowmanager/ObtenerFlow')
-const EliminarFlow = require('../Utiles/Funciones/FuncionesFlowmanager/EliminarFlow')
+const GuardarFlow = require('../services/FlowManagerBD/Funciones/GuardarFlow')
+const ObtenerFlow = require('../services/FlowManagerBD/Funciones/ObtenerFlow')
+const EliminarFlow = require('../services/FlowManagerBD/Funciones/EliminarFlow')
 class FlowManager {
     constructor() {
         this.userFlows = {}; // Almacena los flujos de cada usuario

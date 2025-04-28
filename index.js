@@ -1,6 +1,6 @@
-const connectToWhatsApp = require('./src/Utiles/Mensajes/whatsapp');
-const getMessageType = require('./src/Utiles/Mensajes/GetType');
-const messageResponder = require('./src/Utiles/Mensajes/messageResponder');
+const connectToWhatsApp = require('./src/services/Mensajes/whatsapp');
+const getMessageType = require('./src/services/Mensajes/GetType');
+const messageResponder = require('./src/services/Mensajes/messageResponder');
 const socketSingleton = require('./src/services/SockSingleton/sockSingleton');
 
 const startBot = async () => {

@@ -1,16 +1,17 @@
-const { getByChatGpt4o } = require("./Base");
+const { getByChatGpt4o } = require("../../services/Chatgpt/Base");
 const { obtenerUsuarioPorUserId } = require("../../services/usuario/usuarioBase");
 
 const opciones = [
     {
-        permiso: "CREAR_RUTA",
-        accion: "Crear ruta",
-        descripcion: "Puesta en marcha por parte del encargado de logística para operar la hoja de ruta.",
+        //permiso: "",  permisos necesarios para acceder a esta accion en particular. Se cargan en la BD tabla usuarios (permisos: json).
+        accion: "Accion_ejemplo",
+        descripcion: "Ejemplo para los flujos.",
         data: {
-            id_cab: "Número de ID de la hoja de ruta a la que se hace referencia en el mensaje."
+            mensaje: "el mismo mensaje del usuario."
         }
     },
     {
+        // Si no existe un atributo permiso la accion puede ser ejecutada por cualquiera.
         accion: "No comprendido",
         data: {
             Default: "El usuario envió un mensaje sin coherencia aparente."
@@ -20,32 +21,29 @@ const opciones = [
 
 const analizarIntencion = async (message, sender) => {
     try {
+
+        //Obtiene el usuario y sus permisos, mediante el numero de telefono (sender)
         const usuario = await obtenerUsuarioPorUserId(sender);
         const permisosUsuario = (usuario?.permisos || []).map(p => p.toUpperCase());
 
-        console.log("😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕")
-        console.log(usuario)
-        console.log(permisosUsuario)
-        console.log("😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕")
-
         const opcionesFiltradas = opciones.filter(op => {
-            // Opción abierta si no requiere permiso
+            // NO opcion "permiso" = Acceso concedido
             if (!op.hasOwnProperty("permiso")) return true;
 
             // Validar si el usuario tiene ese permiso
             return permisosUsuario.includes(op.permiso.toUpperCase());
         });
 
+        //------------------------- LOGICA DE CHAT GPT-----------------------------//
         const opcionesTxt = JSON.stringify(opcionesFiltradas);
+
+        //los promt comprenden el 90% de que la informacion se valide y busque de buena manera.
+        //Recomendacion: llena el formulario pre cargado con lo necesario.
         const prompt = `
-Como bot de un sistema de control de hojas de ruta, quiero identificar la intención del usuario y ejecutar la acción adecuada para gestionar correctamente las operaciones posibles.
-
-Formato de respuesta: Devuelve únicamente un JSON con los datos cargados, sin incluir explicaciones adicionales.
-
-Advertencia: Revisa cuidadosamente el mensaje del usuario y asegúrate de coincidir exactamente con todos los detalles del producto solicitado, como tamaño, color y tipo de material. No elijas productos basándote en coincidencias parciales.
-
-Resumen del contexto: soy bot con el propósito de ayudar a una fábrica a controlar sus envíos.
-
+Descripcion: es para un ejemplo chat, simplemente analiza que quiere el usuario, elige la opcion mas apropiada (para el ejemplo utiliza ("Accion ejemplo" siempre))
+Formato de respuesta: devuelve el json, de la opcion elegida tal cual esta sin mensajes extras.
+Advertencia: corrige el texto del mensaje del usuario.
+Resumen del contexto: es una prueba flujo
 El usuario dice: "${message}"
 
 Tienes estas acciones posibles. Debes analizar la palabra clave del usuario: ${opcionesTxt}.
@@ -54,6 +52,9 @@ Tienes estas acciones posibles. Debes analizar la palabra clave del usuario: ${o
         const response = await getByChatGpt4o(prompt);
         const respuesta = JSON.parse(response);
 
+        //Chat gpt toma el prompt y nos devuelve un json con la informacion que le requerimos
+        //Acciones realizables por chatgpt:
+        // coincidencia de articulos(busqueda de stock), Calculos avanzados(existencias y moviemientos), Analizar intencion(que necesita el usuario)
         return respuesta?.json_data || respuesta;
 
     } catch (error) {

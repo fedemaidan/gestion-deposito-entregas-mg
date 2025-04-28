@@ -1,5 +1,5 @@
 const { analizarIntencion } = require('../../Utiles/Chatgpt/AnalizarIntencion');
-const IniciarRutaFlow = require('../Logistica/IniciarRutaFlow');
+const FlujoEjemploFlow = require('../EJEMPLO/FlujoEjemploFlow');
 
 const defaultFlow = {
 
@@ -10,19 +10,19 @@ const defaultFlow = {
             let result;
             await sock.sendMessage(userId, { text: "⏳ Analizando mensaje ⏳" });
 
+            //Esta logica viene de que si el mensaje es una imagen o un pdf, ya se proceso anteriormente, no hace falta volver a hacerlo.
             if (messageType == "text" || messageType == "text_extended" || messageType == "audio") {
                 result = await analizarIntencion(message, userId);
-
             }
             else {
                 result = message;
             }
 
-            console.log(JSON.stringify(result, null, 2));
-
+            //Aqui van todas las ACCIONES que se encuentran en analizar intencion. El json y este switch deben hacer MATCH
+            //Se encarga de Enrutar  los datos al flujo que el usuario se esta dirijiendo.
             switch (result.accion) {
-                case "Crear ruta":
-                    IniciarRutaFlow.start(userId, { data: result.data }, sock)
+                case "Accion_ejemplo":
+                    FlujoEjemploFlow.start(userId, { data: result.data }, sock)
                     break;
 
                 case "No comprendido":
