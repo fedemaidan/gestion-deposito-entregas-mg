@@ -8,7 +8,7 @@ const { admin } = require('../Firebase/firebaseUtils'); // Configuración de Fir
 //Firebase guarda los archivos para que se puedan utilizar (Enviar, analizar con chatgpt, subir a un sheet)
 // por lo cual es importante no mezclar los proyectos. (Cada proyecto tiene su carpeta y manera de distinguir archivos)
 //          Proyecto/Carpeta contenedora/     
-const carpeta = "Ejemplo-proyecto/Ejemplo-carpeta/";
+const carpeta = process.env.CARPETA_FIREBASE ||"Ejemplo-proyecto/Ejemplo-carpeta/";
 
 async function saveImageToStorage(message, senderPhone, messageType) {
     try {

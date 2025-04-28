@@ -1,3 +1,4 @@
+require('dotenv').config();
 const connectToWhatsApp = require('./src/services/Mensajes/whatsapp');
 const getMessageType = require('./src/services/Mensajes/GetType');
 const messageResponder = require('./src/services/Mensajes/messageResponder');
