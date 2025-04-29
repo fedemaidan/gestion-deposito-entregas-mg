@@ -3,7 +3,7 @@ const { obtenerUsuarioPorUserId } = require("../../services/usuario/usuarioBase"
 
 const opciones = [
     {
-        //permiso: "",  permisos necesarios para acceder a esta accion en particular. Se cargan en la BD tabla usuarios (permisos: json).
+        //permiso: "accion1",  permisos necesarios para acceder a esta accion en particular. Se cargan en la BD tabla usuarios (permisos: json).
         accion: "Accion_ejemplo",
         descripcion: "Ejemplo para los flujos.",
         data: {
