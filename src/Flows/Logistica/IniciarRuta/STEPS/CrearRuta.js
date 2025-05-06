@@ -24,6 +24,45 @@ module.exports = async function CrearRuta(userId, data, sock) {
     const hoja = hojaRuta.Hoja_Ruta[0];
     const { ID_CAB, Fecha, Detalles = [], Hora_Salida, Cerrado } = hoja;
     const { Chofer } = hojaRuta;
+    //------------------------------------------------------------------------------------------
+    // 🔍 VALIDACIONES ANTES DE CONTINUAR
+    // 1. Que no esté cerrada la hoja de ruta
+    if (Cerrado) {
+        await sock.sendMessage(userId, { text: "🚫 Esta hoja de ruta ya está cerrada y no se puede modificar." });
+        FlowManager.resetFlow(userId);
+        return;
+    }
+
+    // 2. Que tenga al menos un detalle
+    if (Detalles.length === 0) {
+        await sock.sendMessage(userId, { text: "🚫 La hoja de ruta no contiene entregas. Verificá que esté correctamente cargada." });
+        FlowManager.resetFlow(userId);
+        return;
+    }
+
+    // 3. Que todas las entregas tengan dirección
+    const sinDireccion = Detalles.filter(det => !det.Direccion_Entrega || det.Direccion_Entrega.trim() === "");
+    if (sinDireccion.length > 0) {
+        const clientesSinDireccion = sinDireccion.map(det => `• ${det.Cliente || "Cliente sin nombre"} (ID_DET: ${det.ID_DET})`).join("\n");
+        await sock.sendMessage(userId, {
+            text: `🚫 Las siguientes entregas no tienen dirección de entrega:\n${clientesSinDireccion}\n\nNo se puede iniciar la hoja hasta que se completen esos datos.`
+        });
+        FlowManager.resetFlow(userId);
+        return;
+    }
+
+    // 4. ❌ El chofer NO PUEDE iniciar su propia hoja de ruta (es ilegal)
+    const choferPhone = Chofer?.Telefono?.replace(/\D/g, '');
+    const userIdPhone = userId.split("@")[0].replace(/\D/g, '');
+
+    if (choferPhone && choferPhone === userIdPhone) {
+        await sock.sendMessage(userId, {
+            text: `🚫 No está permitido que el chofer *(${Chofer?.Nombre})* inicie su propia hoja de ruta.\n\nSolo el área de logística puede hacer esto.`
+        });
+        FlowManager.resetFlow(userId);
+        return;
+    }
+    //------------------------------------------------------------------------------------------
 
 
     // ACA CHAT VA EL IF CON EL TELEFONO DEL CHOFER:

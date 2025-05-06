@@ -43,7 +43,7 @@ const defaultFlow = {
 
     async handle(userId, message, sock) {
         await sock.sendMessage(userId, {
-            text: 'No entendi tu mensaje, porfavor repitelo',
+            text: 'No entendi tu mensaje, por favor repitelo',
         });
     },
 };

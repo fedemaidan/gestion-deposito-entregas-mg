@@ -12,7 +12,28 @@ const messageResponder = async (messageType, msg, sock, sender) =>
         case 'text_extended': {
             const text = msg.message.conversation || msg.message.extendedTextMessage?.text;
 
-            if (text == "RESET") { FlowManager.resetFlow(sender); console.log("⏳⏳⏳⏳FLOW ELIMINADO CON EXITO⏳⏳⏳⏳"); return }
+            //RESET CODE
+                if (text.startsWith("RESET")) {
+                    const partes = text.split("#");
+
+                    // Caso 1: solo "RESET"
+                    if (partes.length === 1) {
+                        FlowManager.resetFlow(sender);
+                        console.log("⏳⏳⏳⏳FLOW ELIMINADO CON ÉXITO para sender⏳⏳⏳⏳");
+                    }
+                    // Caso 2: "RESET#1122334455"
+                    else if (partes.length === 2) {
+                        const numero = partes[1].replace(/\D/g, '');
+                        const userIdDestino = `${numero}@s.whatsapp.net`;
+
+                        FlowManager.resetFlow(userIdDestino);
+                        console.log(`⏳⏳⏳⏳FLOW ELIMINADO CON ÉXITO para ${userIdDestino}⏳⏳⏳⏳`);
+                    }
+
+                    return;
+                }
+            //-------------------------
+
 
             await FlowMapper.handleMessage(sender, text, sock, messageType);
             break;

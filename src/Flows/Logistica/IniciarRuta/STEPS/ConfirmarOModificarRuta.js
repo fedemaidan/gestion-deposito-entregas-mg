@@ -10,7 +10,7 @@ module.exports = async function ConfirmarOModificarRuta(userId, message, sock) {
         await sock.sendMessage(userId, { text: "🔄 Procesando..." });
 
         const hojaDeRuta = FlowManager.userFlows[userId]?.flowData;
-        const Operacion = await IndicarComienzo(hojaDeRuta,sock)
+        const Operacion = await IndicarComienzo(hojaDeRuta, sock, userId)
 
         if (Operacion.Success) {
             await sock.sendMessage(userId, { text: "✅ La operación finalizó exitosamente." });
