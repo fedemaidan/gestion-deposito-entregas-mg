@@ -18,8 +18,8 @@ module.exports = async function ConfirmarOModificarRuta(userId, message, sock) {
         } else {
             await sock.sendMessage(userId, { text: Operacion.msg });
         }
-        //NO RESETEO EL FLOW POR QUE MI NUMERO Y EL DEL CAMINERO ES EL MISMO
-       // FlowManager.resetFlow(userId)
+      
+       FlowManager.resetFlow(userId)
     }
     else if (data.data.Eleccion == "2" || data.data.Eleccion == "3") {
         await sock.sendMessage(userId, { text: "❌ La operacion fue cancelada." });

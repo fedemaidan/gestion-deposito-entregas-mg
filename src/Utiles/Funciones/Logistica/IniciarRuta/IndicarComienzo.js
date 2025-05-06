@@ -72,9 +72,6 @@ async function enviarMensajeChofer(Chofer, ID_CAB, Detalles, hojaRuta, sock) {
         await enviarMensaje(Chofer.Telefono + "@s.whatsapp.net", mensaje, sock);
 
         console.log("ENTRO AL ENVIAR MENSAJE DEL CHOFER Y GUARDO EL ESTADO BIEN")
-
-    
-
     } else {
         console.error("⚠️ No se pudo enviar mensaje al Chofer: Teléfono no disponible.");
     }
