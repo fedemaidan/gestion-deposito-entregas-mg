@@ -3,7 +3,7 @@ const { obtenerUsuarioPorUserId } = require("../../services/usuario/usuarioBase"
 
 const opciones = [
     {
-        permiso: "CREAR_RUTA",
+        //permiso: "CREAR_RUTA",
         accion: "Crear ruta",
         descripcion: "Puesta en marcha por parte del encargado de logística para operar la hoja de ruta.",
         data: {
