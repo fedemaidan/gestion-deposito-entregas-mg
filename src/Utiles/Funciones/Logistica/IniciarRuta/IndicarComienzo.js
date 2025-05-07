@@ -31,7 +31,7 @@ module.exports = async function IndicarComienzo(hojaRuta, sock,userId) {
         }
         else
         {
-            sock.sendMessage(userId, { text:"⚠️ No se pudo obtener la información del chofer para esta entrega.Por favor, revisar la hoja de ruta."):
+            sock.sendMessage(userId, { text:"⚠️ No se pudo obtener la información del chofer para esta entrega.Por favor, revisar la hoja de ruta."}):
         }
 
         return { Success: true, id: ID_CAB };
