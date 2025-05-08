@@ -28,6 +28,7 @@ module.exports = async function FinalizarEntrega(userId, message, sock) {
         let nuevoEstado;
         let nextStep;
 
+console.log("data.data.Eleccion", data.data.Eleccion)
 
         switch (data.data.Eleccion) {
             case "1":

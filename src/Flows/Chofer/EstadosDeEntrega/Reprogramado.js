@@ -14,15 +14,6 @@ module.exports = async function Reprogramado(userId, message, sock) {
             console.error("❌ Hoja de ruta vacía o no encontrada.");
             return;
         }
-        // 📦
-        // 📦
-        // 📦
-        // 📦
-        throw new Error("ERROR de capa 8 😂: ERROR DE PRUEBA Y AVISO A DEV's v1");
-        // 📦
-        // 📦
-        // 📦
-        // 📦
         const hoja = hojaRuta.Hoja_Ruta[0];
         const { Detalle_Actual = [], Detalles_Completados = [] } = hoja;
 
@@ -62,6 +53,7 @@ module.exports = async function Reprogramado(userId, message, sock) {
         await sock.sendMessage(userId, { text: "🔁 La entrega fue marcada como *reprogramada*." });
 
         // Vendedor
+      
         const mensajeVendedor = `📦 La entrega al cliente *${detalle.Cliente}* fue reprogramada.\n📝 *Motivo:* ${message}`;
         if (detalle.Telefono_vendedor) {
             await EnviarMensaje(detalle.Telefono_vendedor + "@s.whatsapp.net", mensajeVendedor, sock);

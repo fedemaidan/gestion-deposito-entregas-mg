@@ -46,9 +46,12 @@ module.exports = async function EntregaOK(userId, message, sock) {
         const mensajeVendedor = `📦 La entrega al cliente *${detalle.Cliente}* fue realizada con éxito.`;
 
         // Cliente
-        await EnviarMensaje(detalle.Telefono + "@s.whatsapp.net", mensajeCliente, sock);
-        await enviarRemitoWhatsApp(webUrl.imagenlocal, sock, detalle.Telefono + "@s.whatsapp.net");
-        FlowManager.resetFlow(detalle.Telefono + "@s.whatsapp.net")
+        if(detalle.Telefono) 
+            {
+                await EnviarMensaje(detalle.Telefono + "@s.whatsapp.net", mensajeCliente, sock);
+                await enviarRemitoWhatsApp(webUrl.imagenlocal, sock, detalle.Telefono + "@s.whatsapp.net");
+                FlowManager.resetFlow(detalle.Telefono + "@s.whatsapp.net")
+            }
 
         // Vendedor
         if (detalle.Telefono_vendedor) {

@@ -67,7 +67,7 @@ async function EnviarSiguienteEntrega(choferNumero, hojaRuta, sock) {
             mensaje += `${index + 1}. 📍 *Dirección:* ${detalle.Direccion_Entrega || "No especificada"}, *Localidad:* ${detalle.Localidad || "No especificada"}\n`;
         });
 
-        mensaje += "\n🚛 *Elegí tu próximo destino y manos a la obra*";
+        mensaje += "\n🚛 *Elegí tu próximo destino y manos a la obra* \n🛠️ ¿Querés cambiar algo? Respondé con *MODIFICAR* o *CORREGIR*.";
 
         await enviarMensaje(Chofer.Telefono + "@s.whatsapp.net", mensaje, sock);
 

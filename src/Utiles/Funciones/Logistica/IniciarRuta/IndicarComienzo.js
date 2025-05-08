@@ -19,7 +19,7 @@ module.exports = async function IndicarComienzo(hojaRuta, sock,userId) {
         }
 
         await enviarMensajesClientes(Detalles, sock, userId);
-        await enviarMensajeVendedor(Vendedor, ID_CAB, Detalles, sock, userId);
+        await enviarMensajesAVendedores(Detalles, sock, userId);
         await enviarMensajeChofer(Chofer, ID_CAB, Detalles, hojaRuta, sock);
 
         console.log("✅ Todos los mensajes han sido enviados correctamente.");
@@ -57,16 +57,39 @@ async function enviarMensajesClientes(Detalles, sock, userId) {
     await iniciarFlowsClientes(hojaRuta);
 }
 
-// 🧩 Función interna: mensaje al vendedor
-async function enviarMensajeVendedor(Vendedor, ID_CAB, Detalles, sock, userId) {
-    if (Vendedor?.Telefono) {
-        const clientes = [...new Set(Detalles.map(d => d.Cliente))].join(", ");
-        const mensaje = `📌 *Atención ${Vendedor.Nombre}*, la hoja *${ID_CAB}* ya está en proceso de envío con entregas a los siguientes clientes: *${clientes}*. 📦✅`;
-        await enviarMensaje(Vendedor.Telefono + "@s.whatsapp.net", mensaje, sock);
-    } else {
-        console.error("⚠️ No se pudo enviar mensaje al Vendedor: Teléfono no disponible.");
-        const mensajeAlUsuario = `⚠️ *Falta número de teléfono del vendedor:* "${Vendedor?.Nombre || 'Sin nombre'}". No se pudo notificarlo sobre la hoja *${ID_CAB}*.`;
-        await sock.sendMessage(userId, { text: mensajeAlUsuario });
+async function enviarMensajesAVendedores(Detalles, sock, userId) {
+    // Agrupar entregas por vendedor
+    const entregasPorVendedor = {};
+
+    for (const det of Detalles) {
+        const nombre = det.Vendedor;
+        const telefono = det.Telefono_vendedor;
+
+        if (!telefono) continue;
+
+        if (!entregasPorVendedor[telefono]) {
+            entregasPorVendedor[telefono] = {
+                nombre,
+                clientes: new Set()
+            };
+        }
+
+        entregasPorVendedor[telefono].clientes.add(det.Cliente);
+    }
+
+    // Enviar mensaje a cada vendedor
+    for (const [telefono, data] of Object.entries(entregasPorVendedor)) {
+        const clientesTexto = Array.from(data.clientes).join(", ");
+        const mensaje = `📌 *Hola ${data.nombre}*, ya está en proceso el envío de tus entregas para los siguientes clientes: *${clientesTexto}*. 📦✅`;
+
+        try {
+            await enviarMensaje(telefono + "@s.whatsapp.net", mensaje, sock);
+        } catch (err) {
+            console.error(`❌ Error al enviar mensaje a ${data.nombre}:`, err);
+            await sock.sendMessage(userId, {
+                text: `⚠️ No se pudo notificar al vendedor *${data.nombre}*.`
+            });
+        }
     }
 }
 

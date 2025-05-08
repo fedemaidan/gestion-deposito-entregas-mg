@@ -51,6 +51,7 @@ module.exports = async function CrearRuta(userId, data, sock) {
         return;
     }
 
+    if (process.env.Dev_mode === "false") {          
     // 4. ❌ El chofer NO PUEDE iniciar su propia hoja de ruta (es ilegal)
     const choferPhone = Chofer?.Telefono?.replace(/\D/g, '');
     const userIdPhone = userId.split("@")[0].replace(/\D/g, '');
@@ -63,7 +64,7 @@ module.exports = async function CrearRuta(userId, data, sock) {
         return;
     }
     //------------------------------------------------------------------------------------------
-
+    }  
 
     // ACA CHAT VA EL IF CON EL TELEFONO DEL CHOFER:
     const choferId = `${Chofer.Telefono}@s.whatsapp.net`;
