@@ -56,6 +56,7 @@ module.exports = async function EntregaNOK(userId, message, sock) {
         // ✅ VENDEDOR - Notificamos problema
         const mensajeVendedor = `⚠️ Hubo un *problema en la entrega* al cliente *${detalle.Cliente}*.\n\n📝 *Aclaración del chofer:* ${detalle.Observaciones || "Sin observaciones."}`;
         if (detalle.Telefono_vendedor) {
+            await enviarRemitoWhatsApp(webUrl.imagenlocal, sock, detalle.Telefono_vendedor + "@s.whatsapp.net");
             await EnviarMensaje(detalle.Telefono_vendedor + "@s.whatsapp.net", mensajeVendedor, sock);
         }
 
@@ -68,7 +69,7 @@ module.exports = async function EntregaNOK(userId, message, sock) {
         FlowManager.setFlow(userId, "ENTREGACHOFER", "PrimeraEleccionEntrega", hojaRuta);
 
         // 🛵 Enviar siguiente entrega
-        await EnviarSiguienteEntrega(userId, hojaRuta, sock);
+        await EnviarSiguienteEntrega(userId, hojaRuta, sock, userId);
 
     } catch (error) {
         console.error("❌ Error en EntregaNOK:", error);

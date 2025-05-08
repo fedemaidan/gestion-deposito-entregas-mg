@@ -67,7 +67,7 @@ module.exports = async function Reprogramado(userId, message, sock) {
         }
 
         // Siguiente entrega
-        await EnviarSiguienteEntrega(userId, hojaRuta, sock);
+        await EnviarSiguienteEntrega(userId, hojaRuta, sock, userId);
 
     } catch (error) {
         console.error("❌ Error en Reprogramado:", error);

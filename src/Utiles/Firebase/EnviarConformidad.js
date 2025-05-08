@@ -3,40 +3,51 @@ const fs = require('fs');
 
 module.exports = async function enviarRemitoWhatsApp(filepath, sock, recipient, imagePath = null) {
     try {
-        // Verificamos existencia del PDF
+        // Verificar existencia del archivo principal
         if (!fs.existsSync(filepath)) {
-            throw new Error('El archivo PDF no existe en la ruta especificada.');
+            throw new Error('❌ El archivo no existe en la ruta especificada.');
         }
 
-        const pdfBuffer = fs.readFileSync(filepath);
+        const fileBuffer = fs.readFileSync(filepath);
+        const ext = path.extname(filepath).toLowerCase();
+        const isImage = ['.jpg', '.jpeg', '.png', '.gif'].includes(ext);
+        const mimeType = isImage ? getImageMimeType(filepath) : 'application/pdf';
 
-        // Enviar el archivo PDF
-        await sock.sendMessage(recipient, {
-            document: pdfBuffer,
-            mimetype: 'application/pdf',
-            fileName: path.basename(filepath)
-        });
+        // Enviar archivo como imagen o documento
+        if (isImage) {
+            await sock.sendMessage(recipient, {
+                image: fileBuffer,
+                mimetype: mimeType,
+                fileName: path.basename(filepath)
+            });
+            console.log(`🖼️ Imagen enviada a ${recipient}`);
+        } else {
+            await sock.sendMessage(recipient, {
+                document: fileBuffer,
+                mimetype: mimeType,
+                fileName: path.basename(filepath)
+            });
+            console.log(`📄 Archivo (documento) enviado a ${recipient}`);
+        }
 
-        console.log(`✅ PDF enviado a ${recipient}`);
-
-        // Si hay una imagen para enviar
+        // Enviar imagen adicional si se especifica
         if (imagePath && fs.existsSync(imagePath)) {
             const imageBuffer = fs.readFileSync(imagePath);
-            const mimeType = getImageMimeType(imagePath);
+            const extraMimeType = getImageMimeType(imagePath);
 
             await sock.sendMessage(recipient, {
                 image: imageBuffer,
-                mimetype: mimeType,
+                mimetype: extraMimeType,
                 fileName: path.basename(imagePath)
             });
 
-            console.log(`🖼️ Imagen enviada: ${imagePath}`);
+            console.log(`🖼️ Imagen extra enviada: ${imagePath}`);
         } else if (imagePath) {
-            console.warn(`⚠️ La imagen no existe: ${imagePath}`);
+            console.warn(`⚠️ La imagen extra no existe: ${imagePath}`);
         }
 
     } catch (error) {
-        console.error("❌ Error enviando el PDF y/o imagen:", error);
+        console.error("❌ Error enviando archivo por WhatsApp:", error.message);
     }
 }
 
@@ -51,6 +62,6 @@ function getImageMimeType(filePath) {
         case '.gif':
             return 'image/gif';
         default:
-            return 'image/jpeg'; // Default
+            return 'image/jpeg'; // Fallback
     }
 }

@@ -1,5 +1,4 @@
 const iniciarFlow = require('../../FuncionesFlowmanager/iniciarFlow');
-
 /**
  * Inicia los flows para cada cliente en la hoja de ruta.
  * @param {Object} hojaRuta - Objeto con estructura de hoja de ruta, cabecera y detalles.
@@ -10,20 +9,22 @@ async function iniciarFlowsClientes(hojaRuta) {
         return;
     }
 
-    const ruta = hojaRuta.Hoja_Ruta[0]; // Como solo hay una hoja de ruta
+    const ruta = hojaRuta.Hoja_Ruta[0];
     const flow = "RECIBIRCLIENTE";
     const step = "SolicitarDatos";
 
     for (const detalle of ruta.Detalles) {
-        const telefono = detalle.Telefono?.trim();
-        if (telefono) {
+        const telefonoCliente = detalle.Telefono?.trim();
+        const telefonoVendedor = detalle.Telefono_vendedor?.trim();
+
+        if (telefonoCliente && telefonoVendedor) {
             try {
-                await iniciarFlow(`${telefono}@s.whatsapp.net`, flow, step, detalle);
+                await iniciarFlow(`${telefonoCliente}@s.whatsapp.net`, flow, step, detalle);
             } catch (error) {
-                console.error(`Error iniciando flow para ${telefono}:`, error);
+                console.error(`❌ Error iniciando flow para cliente ${telefonoCliente}:`, error);
             }
         } else {
-            console.warn(`El cliente ${detalle.Cliente} no tiene número de teléfono válido.`);
+            console.warn(`⚠️ No se inició el flow para el cliente "${detalle.Cliente}" porque falta un teléfono. Cliente: ${telefonoCliente || "no disponible"}, Vendedor: ${telefonoVendedor || "no disponible"}`);
         }
     }
 }

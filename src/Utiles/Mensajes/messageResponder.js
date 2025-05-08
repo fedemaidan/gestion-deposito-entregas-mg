@@ -47,6 +47,10 @@ const messageResponder = async (messageType, msg, sock, sender) =>
                     return;
                 }
 
+                console.log("❌❌❌❌❌❌❌❌❌❌❌❌❌❌")
+                console.log("ME ENCUENTRO EN EL CASE DE IMAGEN")
+                console.log("❌❌❌❌❌❌❌❌❌❌❌❌❌❌")
+
                 let ImageMessage = msg.message.imageMessage
                     || (msg.message.imageWithCaptionMessage?.message?.imageMessage);
 

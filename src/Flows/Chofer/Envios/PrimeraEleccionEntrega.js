@@ -2,6 +2,8 @@ const FlowManager = require('../../../FlowControl/FlowManager');
 const { actualizarHoraSalidaCabecera } = require('../../../services/google/Sheets/hojaDeruta');
 const { IndicarActual } = require('../../../services/google/Sheets/hojaDeruta');
 const OpcionEntrega = require('../../../Utiles/Chatgpt/OpcionEntrega');
+const enviarMensaje = require('../../../Utiles/Funciones/Logistica/IniciarRuta/EnviarMensaje');
+const EnviarMensaje = require('../../../Utiles/Funciones/Logistica/IniciarRuta/EnviarMensaje');
 
 module.exports = async function PrimeraEleccionEntrega(userId, message, sock) {
     try {
@@ -52,7 +54,11 @@ module.exports = async function PrimeraEleccionEntrega(userId, message, sock) {
             hojaRuta.entregasCompletadas = completadas;
             await FlowManager.setFlow(userId, "ENTREGACHOFER", "ModificarEntrega", hojaRuta);
             return;
-        } else {
+        } 
+//---------------------------------------------------------------------------------------- MODIFICAR
+        else
+//---------------------------------------------------------------------------------------- SLECCIONAR SIGUIENTE   
+         {
             // Es un número válido
             const numeroPedido = parseInt(resultado.data.Eleccion);
             const detalleSeleccionado = entregasPendientes[numeroPedido - 1];
@@ -99,6 +105,13 @@ module.exports = async function PrimeraEleccionEntrega(userId, message, sock) {
 
             await IndicarActual(hoja.ID_CAB, detalleSeleccionado.ID_DET);
 
+
+            if (detalleSeleccionado.Telefono) {
+                const telefonoCliente = detalleSeleccionado.Telefono;
+                const mensajeCliente = "📦 *Tu entrega ya está en camino.*\nNos estaremos comunicando en breve. ¡Gracias por tu paciencia!";
+                await enviarMensaje(telefonoCliente+ "@s.whatsapp.net", mensajeCliente, sock);
+            }
+            
             FlowManager.setFlow(userId, "ENTREGACHOFER", "SecuenciaEntrega", hojaRuta);
 
             console.log("✅ Detalle movido a Detalle_Actual.");

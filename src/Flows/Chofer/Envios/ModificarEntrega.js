@@ -1,10 +1,5 @@
-const FlowManager = require('../../../FlowControl/FlowManager');
-const { actualizarHoraSalidaCabecera } = require('../../../services/google/Sheets/hojaDeruta');
-const { IndicarActual } = require('../../../services/google/Sheets/hojaDeruta');
-
 module.exports = async function ModificarEntrega(userId, message, sock) {
   try {
-
     await FlowManager.getFlow(userId);
     const hojaRuta = FlowManager.userFlows[userId]?.flowData;
 
@@ -31,8 +26,14 @@ module.exports = async function ModificarEntrega(userId, message, sock) {
     // Mover la entrega de completadas a actual
     const entregaSeleccionada = completadas.splice(indice, 1)[0];
 
+    // Limpiar observaciones y path
+    entregaSeleccionada.Observaciones = "Entrega reprogramada por el chofer";
+    entregaSeleccionada.Path = "";
+
     hoja.Detalle_Actual = [entregaSeleccionada];
     hoja.Detalles_Completados = completadas;
+
+    await ResetDetalleHoja();
 
     // Comprobante
     const comprobante = entregaSeleccionada.Comprobante;
@@ -55,7 +56,6 @@ module.exports = async function ModificarEntrega(userId, message, sock) {
       text: 'indicá el nuevo resultado:\n1️⃣ Entregado OK ✅\n2️⃣ Entregado NOK ⚠️\n3️⃣ Rechazado ❌\n4️⃣ Cancelado 🚫'
     });
 
-    // Continuar con flujo normal de entregas
     await FlowManager.setFlow(userId, "ENTREGACHOFER", "SecuenciaEntrega", hojaRuta);
 
     console.log("✅ Entrega modificada y movida a Detalle_Actual.");

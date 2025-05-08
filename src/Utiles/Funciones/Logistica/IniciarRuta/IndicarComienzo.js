@@ -1,6 +1,7 @@
 const enviarMensaje = require('../IniciarRuta/EnviarMensaje');
 const FlowManager = require('../../../../FlowControl/FlowManager');
 const iniciarFlowsClientes = require('../IniciarRuta/IniciarClientes');
+const { guardarTelefonoLogistica } = require('../../../../services/google/Sheets/logisticaSheet');
 
 module.exports = async function IndicarComienzo(hojaRuta, sock,userId) {
     try {
@@ -32,7 +33,11 @@ module.exports = async function IndicarComienzo(hojaRuta, sock,userId) {
         else
         {
             sock.sendMessage(userId, { text:"⚠️ No se pudo obtener la información del chofer para esta entrega. Por favor, revisar la hoja de ruta."});
+            FlowManager.resetFlow(userId);
+            return
         }
+
+        await guardarTelefonoLogistica(ID_CAB, userId.split('@')[0]);
 
         return { Success: true, id: ID_CAB };
     } catch (error) {
@@ -60,24 +65,30 @@ async function enviarMensajesClientes(Detalles, sock, userId) {
 async function enviarMensajesAVendedores(Detalles, sock, userId) {
     // Agrupar entregas por vendedor
     const entregasPorVendedor = {};
+    const notificadosFaltantes = new Set();
 
     for (const det of Detalles) {
         const nombre = det.Vendedor;
         const telefono = det.Telefono_vendedor;
+        const cliente = det.Cliente;
 
-        if (!telefono) continue;
-
-        if (!entregasPorVendedor[telefono]) {
-            entregasPorVendedor[telefono] = {
-                nombre,
-                clientes: new Set()
-            };
+        if (telefono) {
+            if (!entregasPorVendedor[telefono]) {
+                entregasPorVendedor[telefono] = {
+                    nombre,
+                    clientes: new Set()
+                };
+            }
+            entregasPorVendedor[telefono].clientes.add(cliente);
+        } else if (nombre && !notificadosFaltantes.has(`${nombre}-${cliente}`)) {
+            // Notificar a logística si hay un vendedor sin teléfono
+            const mensajeFaltante = `⚠️ El vendedor *${nombre}* no tiene teléfono asignado en la hoja de ruta para el cliente *${cliente}*.\nSe procederá sin notificación al vendedor.`;
+            await sock.sendMessage(userId, { text: mensajeFaltante });
+            notificadosFaltantes.add(`${nombre}-${cliente}`);
         }
-
-        entregasPorVendedor[telefono].clientes.add(det.Cliente);
     }
 
-    // Enviar mensaje a cada vendedor
+    // Enviar mensaje a cada vendedor válido
     for (const [telefono, data] of Object.entries(entregasPorVendedor)) {
         const clientesTexto = Array.from(data.clientes).join(", ");
         const mensaje = `📌 *Hola ${data.nombre}*, ya está en proceso el envío de tus entregas para los siguientes clientes: *${clientesTexto}*. 📦✅`;
