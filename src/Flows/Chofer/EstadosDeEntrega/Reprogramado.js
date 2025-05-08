@@ -14,15 +14,7 @@ module.exports = async function Reprogramado(userId, message, sock) {
             console.error("❌ Hoja de ruta vacía o no encontrada.");
             return;
         }
-        // 📦
-        // 📦
-        // 📦
-        // 📦
-        throw new Error("ERROR de capa 8 😂: ERROR DE PRUEBA Y AVISO A DEV's v1");
-        // 📦
-        // 📦
-        // 📦
-        // 📦
+ 
         const hoja = hojaRuta.Hoja_Ruta[0];
         const { Detalle_Actual = [], Detalles_Completados = [] } = hoja;
 
