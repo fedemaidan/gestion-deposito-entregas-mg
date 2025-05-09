@@ -21,9 +21,21 @@ module.exports = async function CrearRuta(userId, data, sock) {
         return;
     }
 
+    
+
     const hoja = hojaRuta.Hoja_Ruta[0];
     const { ID_CAB, Fecha, Detalles = [], Hora_Salida, Cerrado } = hoja;
     const { Chofer } = hojaRuta;
+
+
+    // 0. ❌ HAY CHOFER.
+if (!Chofer?.Telefono || Chofer.Telefono.trim() === "") {
+    await sock.sendMessage(userId, {
+        text: "🚫 No se encontró un número de teléfono válido para el chofer en esta hoja de ruta. Verificá los datos antes de continuar."
+    });
+    FlowManager.resetFlow(userId);
+    return;
+}
     //------------------------------------------------------------------------------------------
     // 🔍 VALIDACIONES ANTES DE CONTINUAR
     // 1. Que no esté cerrada la hoja de ruta
@@ -65,8 +77,7 @@ module.exports = async function CrearRuta(userId, data, sock) {
     }
     //------------------------------------------------------------------------------------------
     }  
-
-    // ACA CHAT VA EL IF CON EL TELEFONO DEL CHOFER:
+    // 5. ❌ El chofer ya tiene una hoja de ruta abierta.
     const choferId = `${Chofer.Telefono}@s.whatsapp.net`;
     const flowExistente = await FlowService.getFlowByUserId(choferId);
 
@@ -76,6 +87,7 @@ module.exports = async function CrearRuta(userId, data, sock) {
         return;
     }
     //------------------------------------------------------------
+    
 
 
     // Construir el mensaje principal

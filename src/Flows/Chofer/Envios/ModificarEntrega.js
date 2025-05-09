@@ -1,3 +1,5 @@
+const FlowManager = require("../../../FlowControl/FlowManager");
+const { ResetDetalleHoja } = require("../../../services/google/Sheets/hojaDeruta");
 module.exports = async function ModificarEntrega(userId, message, sock) {
   try {
     await FlowManager.getFlow(userId);
@@ -27,13 +29,13 @@ module.exports = async function ModificarEntrega(userId, message, sock) {
     const entregaSeleccionada = completadas.splice(indice, 1)[0];
 
     // Limpiar observaciones y path
-    entregaSeleccionada.Observaciones = "Entrega reprogramada por el chofer";
+    entregaSeleccionada.Observaciones = "";
     entregaSeleccionada.Path = "";
 
     hoja.Detalle_Actual = [entregaSeleccionada];
     hoja.Detalles_Completados = completadas;
 
-    await ResetDetalleHoja();
+    await ResetDetalleHoja(hojaRuta);
 
     // Comprobante
     const comprobante = entregaSeleccionada.Comprobante;

@@ -207,7 +207,61 @@ async function cerrarHojaDeRuta(hojaRuta) {
 
     console.log(`✅ Hoja de ruta cerrada. Hora de salida: ${horaFinal || 'no registrada'}`);
 }
+
+
+async function ResetDetalleHoja(hojaRuta) {
+    const sheetId = process.env.GOOGLE_SHEET_ID;
+
+    if (!hojaRuta || !hojaRuta.Hoja_Ruta || !Array.isArray(hojaRuta.Hoja_Ruta)) {
+        console.error("❌ Estructura de hoja de ruta inválida.");
+        return hojaRuta;
+    }
+
+    const ruta = hojaRuta.Hoja_Ruta[0];
+
+    if (!ruta.Detalles || !Array.isArray(ruta.Detalles)) {
+        console.warn("⚠️ No hay detalles para restablecer.");
+        return hojaRuta;
+    }
+
+    for (let detalle of ruta.Detalles) {
+        detalle.Estado = '';
+        detalle.Incidencia = '';
+        detalle.Path = '';
+
+        const valoresDetalle = [
+            ruta.ID_CAB,
+            detalle.ID_DET || '',
+            detalle.COD_CLI || '',
+            detalle.Cliente || '',
+            detalle.Telefono || '',
+            detalle.Comprobante?.Letra || '',
+            detalle.Comprobante?.Punto_Venta || '',
+            detalle.Comprobante?.Numero || '',
+            detalle.Direccion_Entrega || '',
+            detalle.Localidad || '',
+            detalle.Observaciones || '',
+            detalle.Vendedor || '',
+            detalle.Telefono_vendedor || '',
+            detalle.Condicion_Pago || '',
+            detalle.Estado || '',
+            detalle.Incidencia || '',
+            detalle.Path
+        ];
+
+        try {
+            await updateRow(sheetId, valoresDetalle, 'Detalle!A1:Z', 1, detalle.ID_DET);
+            console.log(`🔁 Detalle reseteado: ${detalle.ID_DET}`);
+        } catch (err) {
+            console.error(`❌ Error al resetear detalle ${detalle.ID_DET}:`, err.message);
+        }
+    }
+
+    return hojaRuta;
+}
+
 module.exports = {
+    ResetDetalleHoja,
     IndicarActual,
     cerrarHojaDeRuta,
     actualizarDetalleActual,
