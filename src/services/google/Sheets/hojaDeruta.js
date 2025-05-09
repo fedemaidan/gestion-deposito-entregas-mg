@@ -120,6 +120,10 @@ async function actualizarDetalleActual(hojaRuta) {
         return;
     }
 
+    if (typeof detalle.Path !== 'string' || detalle.Path.trim().toLowerCase() === 'null' || detalle.Path.trim().toLowerCase() === 'undefined' || detalle.Path.trim() === '') {
+        detalle.Path = '';
+    }
+
     const valoresDetalle = [
         data.ID_CAB,
         detalle.ID_DET || '',
@@ -137,7 +141,7 @@ async function actualizarDetalleActual(hojaRuta) {
         detalle.Condicion_Pago || '',
         detalle.Estado || '',
         detalle.Incidencia || '',
-        detalle.Path || ''
+        detalle.Path
     ];
 
     await updateRow(sheetId, valoresDetalle, 'Detalle!A1:Z', 1, detalle.ID_DET); // ID_DET en columna B (índice 1)

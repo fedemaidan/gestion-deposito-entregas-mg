@@ -1,10 +1,10 @@
 
-async function enviarMensaje(userId, text, sock) {
+async function enviarMensaje(telefono, text, sock) {
     try {
-        await sock.sendMessage(userId, { text });
-        console.log(`📩 Mensaje enviado a ${userId}: ${text}`);
+        await sock.sendMessage(telefono, { text });
+        console.log(`📩 Mensaje enviado a ${telefono}: ${text}`);
     } catch (error) {
-        console.error(`❌ Error al enviar mensaje a ${userId}:`, error);
+        console.error(`❌ Error al enviar mensaje a ${telefono}:`, error);
     }
 }
 

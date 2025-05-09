@@ -24,15 +24,10 @@ async function saveImageToStorage(message, senderPhone, messageType) {
             message: { [`${messageType}Message`]: mediaContent },
         };
 
-        console.log(messageType)
-
         const buffer = await downloadMediaMessage(enrichedMessage, 'buffer');
-        console.log("buffer")
-        console.log(buffer)
-
 
         console.log('📂 Archivo descargado');
-
+        
         // Generar nombre único
         const randomNumber = Math.floor(Math.random() * 1000000);
         const downloadsDir = path.join(__dirname, '../downloads');
@@ -73,23 +68,24 @@ async function saveImageToStorage(message, senderPhone, messageType) {
             //------
 
             return { imagenlocal: firstPagePath, imagenFirebase: storageResult.signedUrl };
-        } else {
-            // Guardar imagen directamente
-            const ext = path.extname(mediaContent.fileName || '.jpeg');
-            const localImagePath = path.join(downloadsDir, `${randomNumber}${ext}`);
+        } else 
+        {
+            // Forzar extensión según mimetype
+            let forcedExt = '.jpg';
+            let mimeType = 'image/jpeg';
+            if (mediaContent.mimetype === 'image/png') {
+                forcedExt = '.png';
+                mimeType = 'image/png';
+            }
+
+            const localImagePath = path.join(downloadsDir, `${randomNumber}${forcedExt}`);
             fs.writeFileSync(localImagePath, buffer);
-
-
             const date = new Date().toISOString().split('T')[0];
-            const filePath = `metal/remitos/${senderPhone}/${date}/${randomNumber}.jpeg`;
+            const filePath = `metal/remitos/${senderPhone}/${date}/${randomNumber}${forcedExt}`;
             const imageBuffer = fs.readFileSync(localImagePath);
-
-            const storageResult = await saveFileToStorage(imageBuffer, `${randomNumber}.jpeg`, filePath, 'image/jpeg');
-
-
+            const storageResult = await saveFileToStorage(imageBuffer, `${randomNumber}${forcedExt}`, filePath, mimeType);
             console.log(`✅ Imagen guardada en: ${localImagePath}`);
-
-            return { imagenlocal: localImagePath, imagenFirebase: storageResult.signedUrl };
+            return { imagenlocal: localImagePath, imagenFirebase: storageResult.signedUrl };          
         }
     } catch (error) {
         console.error('❌ Error procesando el archivo:', error.message);

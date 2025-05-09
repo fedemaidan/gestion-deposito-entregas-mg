@@ -45,14 +45,18 @@ module.exports = async function EntregaNOK(userId, message, sock) {
         await EnviarMensaje(detalle.Telefono + "@s.whatsapp.net", `✅ Foto del remito y aclaración guardadas correctamente.`, sock);
 
         // ✅ CLIENTE - Enviamos remito y aclaración
-        const mensajeCliente = `📦 Hola! Algo sucedió con la entrega. Te acerco el remito y la aclaración del chofer.\n\n📝 *Aclaración:* ${detalle.Observaciones || "Sin aclaraciones."}`;
-        await EnviarMensaje(detalle.Telefono + "@s.whatsapp.net", mensajeCliente, sock);
-        await enviarRemitoWhatsApp(webUrl.imagenlocal, sock, detalle.Telefono + "@s.whatsapp.net");
-        FlowManager.resetFlow(detalle.Telefono + "@s.whatsapp.net")
+        if(detalle.Telefono) 
+            {
+                const mensajeCliente = `📦 Hola! Algo sucedió con la entrega. Te acerco el remito y la aclaración del chofer.\n\n📝 *Aclaración:* ${detalle.Observaciones || "Sin aclaraciones."}`;
+                await EnviarMensaje(detalle.Telefono + "@s.whatsapp.net", mensajeCliente, sock);
+                await enviarRemitoWhatsApp(webUrl.imagenlocal, sock, detalle.Telefono + "@s.whatsapp.net");
+                FlowManager.resetFlow(detalle.Telefono + "@s.whatsapp.net")
+            }
 
         // ✅ VENDEDOR - Notificamos problema
         const mensajeVendedor = `⚠️ Hubo un *problema en la entrega* al cliente *${detalle.Cliente}*.\n\n📝 *Aclaración del chofer:* ${detalle.Observaciones || "Sin observaciones."}`;
         if (detalle.Telefono_vendedor) {
+            await enviarRemitoWhatsApp(webUrl.imagenlocal, sock, detalle.Telefono_vendedor + "@s.whatsapp.net");
             await EnviarMensaje(detalle.Telefono_vendedor + "@s.whatsapp.net", mensajeVendedor, sock);
         }
 
@@ -65,7 +69,7 @@ module.exports = async function EntregaNOK(userId, message, sock) {
         FlowManager.setFlow(userId, "ENTREGACHOFER", "PrimeraEleccionEntrega", hojaRuta);
 
         // 🛵 Enviar siguiente entrega
-        await EnviarSiguienteEntrega(userId, hojaRuta, sock);
+        await EnviarSiguienteEntrega(userId, hojaRuta, sock, userId);
 
     } catch (error) {
         console.error("❌ Error en EntregaNOK:", error);

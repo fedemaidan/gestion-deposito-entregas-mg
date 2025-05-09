@@ -46,12 +46,16 @@ module.exports = async function EntregaOK(userId, message, sock) {
         const mensajeVendedor = `📦 La entrega al cliente *${detalle.Cliente}* fue realizada con éxito.`;
 
         // Cliente
-        await EnviarMensaje(detalle.Telefono + "@s.whatsapp.net", mensajeCliente, sock);
-        await enviarRemitoWhatsApp(webUrl.imagenlocal, sock, detalle.Telefono + "@s.whatsapp.net");
-        FlowManager.resetFlow(detalle.Telefono + "@s.whatsapp.net")
+        if(detalle.Telefono) 
+            {
+                await EnviarMensaje(detalle.Telefono + "@s.whatsapp.net", mensajeCliente, sock);
+                await enviarRemitoWhatsApp(webUrl.imagenlocal, sock, detalle.Telefono + "@s.whatsapp.net");
+                FlowManager.resetFlow(detalle.Telefono + "@s.whatsapp.net")
+            }
 
         // Vendedor
         if (detalle.Telefono_vendedor) {
+            await enviarRemitoWhatsApp(webUrl.imagenlocal, sock, detalle.Telefono_vendedor + "@s.whatsapp.net");
             await EnviarMensaje(detalle.Telefono_vendedor + "@s.whatsapp.net", mensajeVendedor, sock);
         }
 
@@ -66,7 +70,7 @@ module.exports = async function EntregaOK(userId, message, sock) {
 
         FlowManager.setFlow(userId, "ENTREGACHOFER", "PrimeraEleccionEntrega", hojaRuta);
 
-        await EnviarSiguienteEntrega(userId, hojaRuta, sock);
+        await EnviarSiguienteEntrega(userId, hojaRuta, sock, userId);
 
     } catch (error) {
         console.error("❌ Error en EntregaOK:", error);

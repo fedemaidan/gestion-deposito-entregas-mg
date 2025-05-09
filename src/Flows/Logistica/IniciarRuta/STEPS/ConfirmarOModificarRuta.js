@@ -16,10 +16,13 @@ module.exports = async function ConfirmarOModificarRuta(userId, message, sock) {
             await sock.sendMessage(userId, { text: "✅ La operación finalizó exitosamente." });
 
         } else {
-            await sock.sendMessage(userId, { text: Operacion.msg });
+            await sock.sendMessage(userId, { text: Operacion.msg })
         }
       
-       FlowManager.resetFlow(userId)
+        if (process.env.Dev_mode === "false") {
+            await FlowManager.resetFlow(userId);
+        }
+    
     }
     else if (data.data.Eleccion == "2" || data.data.Eleccion == "3") {
         await sock.sendMessage(userId, { text: "❌ La operacion fue cancelada." });

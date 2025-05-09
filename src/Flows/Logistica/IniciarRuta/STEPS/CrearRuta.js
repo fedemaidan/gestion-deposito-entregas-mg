@@ -51,6 +51,7 @@ module.exports = async function CrearRuta(userId, data, sock) {
         return;
     }
 
+    if (process.env.Dev_mode === "false") {          
     // 4. ❌ El chofer NO PUEDE iniciar su propia hoja de ruta (es ilegal)
     const choferPhone = Chofer?.Telefono?.replace(/\D/g, '');
     const userIdPhone = userId.split("@")[0].replace(/\D/g, '');
@@ -63,7 +64,7 @@ module.exports = async function CrearRuta(userId, data, sock) {
         return;
     }
     //------------------------------------------------------------------------------------------
-
+    }  
 
     // ACA CHAT VA EL IF CON EL TELEFONO DEL CHOFER:
     const choferId = `${Chofer.Telefono}@s.whatsapp.net`;
@@ -85,8 +86,14 @@ module.exports = async function CrearRuta(userId, data, sock) {
     if (Detalles.length > 0) {
         output += `\n📦 *Entregas planificadas (${Detalles.length})*\n━━━━━━━━━━━━━━━━━━\n`;
         Detalles.forEach((det, index) => {
+            const telefonoVendedor = det.Telefono_vendedor?.trim() || "No especificado";
             output += `\n📍 *Entrega ${index + 1}*\n`;
-            output += `👤 *Cliente:* ${det.Cliente || "No definido"}\n📍 *Dirección:* ${det.Direccion_Entrega || "No disponible"}\n🏘️ *Localidad:* ${det.Localidad || "No disponible"}\n📄 *Comprobante:* ${det.Comprobante?.Letra || ""}-${det.Comprobante?.Punto_Venta || ""}-${det.Comprobante?.Numero || ""}\n📞 *Teléfono:* ${det.Telefono || "No disponible"}\n`;
+            output += `👤 *Cliente:* ${det.Cliente || "No definido"}\n`;
+            output += `📍 *Dirección:* ${det.Direccion_Entrega || "No disponible"}\n`;
+            output += `🏘️ *Localidad:* ${det.Localidad || "No disponible"}\n`;
+            output += `📄 *Comprobante:* ${det.Comprobante?.Letra || ""}-${det.Comprobante?.Punto_Venta || ""}-${det.Comprobante?.Numero || ""}\n`;
+            output += `📞 *Teléfono Cliente:* ${det.Telefono || "No disponible"}\n`;
+            output += `📞 *Teléfono Vendedor:* ${telefonoVendedor}\n`;
         });
     } else {
         output += `\n⚠️ No hay entregas cargadas en esta hoja.`;
