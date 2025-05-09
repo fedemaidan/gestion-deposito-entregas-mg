@@ -14,6 +14,7 @@ module.exports = async function Reprogramado(userId, message, sock) {
             console.error("❌ Hoja de ruta vacía o no encontrada.");
             return;
         }
+
         const hoja = hojaRuta.Hoja_Ruta[0];
         const { Detalle_Actual = [], Detalles_Completados = [] } = hoja;
 
