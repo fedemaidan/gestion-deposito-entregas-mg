@@ -5,6 +5,8 @@ const EntregaOK = require('../Chofer/EstadosDeEntrega/EntregaOK');
 const Reprogramado = require('../Chofer/EstadosDeEntrega/Reprogramado');
 const Aclaracion = require('../Chofer/HerramientaDeEstado/Aclaracion');
 const ModificarEntrega = require('../Chofer/Envios/ModificarEntrega');
+const ConfirmarSigEntrega = require('../Chofer/Envios/ConfirmarSigEntrega');
+
 const IniciarEntregaSteps =
 {
     PrimeraEleccionEntrega,
@@ -13,6 +15,7 @@ const IniciarEntregaSteps =
     EntregaOK,
     Reprogramado,
     Aclaracion,
-    ModificarEntrega
+    ModificarEntrega,
+    ConfirmarSigEntrega
 }
 module.exports = { IniciarEntregaSteps };
