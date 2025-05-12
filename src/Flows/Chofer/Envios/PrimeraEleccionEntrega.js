@@ -1,9 +1,7 @@
 const FlowManager = require('../../../FlowControl/FlowManager');
 const { actualizarHoraSalidaCabecera } = require('../../../services/google/Sheets/hojaDeruta');
-const { IndicarActual } = require('../../../services/google/Sheets/hojaDeruta');
 const OpcionEntrega = require('../../../Utiles/Chatgpt/OpcionEntrega');
-const enviarMensaje = require('../../../Utiles/Funciones/Logistica/IniciarRuta/EnviarMensaje');
-const EnviarMensaje = require('../../../Utiles/Funciones/Logistica/IniciarRuta/EnviarMensaje');
+const timeOutConfirmacion = require('../../../Utiles/Funciones/Chofer/timeOutConfirmacion');
 
 module.exports = async function PrimeraEleccionEntrega(userId, message, sock) {
     try {
@@ -99,20 +97,12 @@ module.exports = async function PrimeraEleccionEntrega(userId, message, sock) {
 
             await sock.sendMessage(userId, { text: mensaje });
 
-            await sock.sendMessage(userId, {
-                text: 'Cuando la entrega finalice, indícalo enviando un mensaje con el resultado de la entrega:\n1️⃣ Entregado OK ✅\n2️⃣ Entregado NOK ⚠️\n3️⃣ Rechazado ❌\n4️⃣ Cancelado 🚫'
-            });
+            //siguiente step de confirmacion y lanzmiento del timer. 5 minutos
+            hojaRuta.confirmado = false; //reinicio la verificacion de confirmacion
+            FlowManager.setFlow(userId, "ENTREGACHOFER", "ConfirmarSigEntrega", hojaRuta);
+            timeOutConfirmacion(userId, sock);
 
-            await IndicarActual(hoja.ID_CAB, detalleSeleccionado.ID_DET);
-
-
-            if (detalleSeleccionado.Telefono) {
-                const telefonoCliente = detalleSeleccionado.Telefono;
-                const mensajeCliente = "📦 *Tu entrega ya está en camino.*\nNos estaremos comunicando en breve. ¡Gracias por tu paciencia!";
-                await enviarMensaje(telefonoCliente+ "@s.whatsapp.net", mensajeCliente, sock);
-            }
-            
-            FlowManager.setFlow(userId, "ENTREGACHOFER", "SecuenciaEntrega", hojaRuta);
+            await sock.sendMessage(userId, {text:`\n\n📌 *Por favor, confirmá tu próxima entrega respondiendo con:*\n1️⃣ *Sí, confirmar.*\n2️⃣ *No, cancelar.*\n\n⏳ *Si no se recibe una respuesta en los próximos 5 minutos, la entrega será confirmada automáticamente.*`});
 
             console.log("✅ Detalle movido a Detalle_Actual.");
         }

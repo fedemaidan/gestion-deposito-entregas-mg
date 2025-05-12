@@ -15,6 +15,7 @@ async function BuscarHoja(userId, text) {
 
         // Estructura del JSON final
         const hojaRuta = {
+            confirmado : false,
             Hoja_Ruta: [
                 {
                     ID_CAB: text,
