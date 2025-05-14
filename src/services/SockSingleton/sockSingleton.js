@@ -13,7 +13,7 @@ class SockSingleton {
 
     async setSock(sockInstance) {
         this.sock = sockInstance;
-
+1234
    this.sock.ev.on('messages.upsert', async (message) => {
         
         console.log('New message:', message);
@@ -28,7 +28,7 @@ class SockSingleton {
         await messageResponder(messageType, msg, this.sock, sender);
 
     });
-        setInterval(async () => await sock.sendPresenceUpdate('available'), 10 * 60 * 1000);
+        setInterval(async () => await this.sock.sendPresenceUpdate('available'), 10 * 60 * 1000);
     }
 
     // Obtiene la instancia del sock

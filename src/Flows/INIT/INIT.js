@@ -1,6 +1,6 @@
 const { analizarIntencion } = require('../../Utiles/Chatgpt/AnalizarIntencion');
 const IniciarRutaFlow = require('../Logistica/IniciarRutaFlow');
-
+const FlowManager = require('../../FlowControl/FlowManager');
 const defaultFlow = {
 
     async Init(userId, message, sock, messageType) {
