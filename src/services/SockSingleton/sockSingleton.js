@@ -1,5 +1,5 @@
 const GetMessageType = require("../../Utiles/Mensajes/GetType");
-const messageResponder = require("../../Utiles/Mensajes/MessageResponder");
+const messageResponder = require("../../Utiles/Mensajes/messageResponder");
 
 class SockSingleton {
 
