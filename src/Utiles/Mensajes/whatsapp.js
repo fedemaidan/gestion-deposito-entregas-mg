@@ -8,6 +8,7 @@ const QRCode = require('qrcode');
 // Importa Express para exponer el QR vía web
 const express = require('express');
 const app = express();
+const SocketSingleton = require('../../services/SockSingleton/sockSingleton');
 
 // Variable para almacenar el último QR generado (si se requiere)
 let latestQR = null;
@@ -25,7 +26,8 @@ app.get('/qr', (req, res) => {
 });
 
 // Función para conectarse a WhatsApp
-const connectToWhatsApp = async () => {
+const connectToWhatsApp = async () => 
+{
     // Se utiliza multi-file auth state para manejar la autenticación y almacenar credenciales en './auth_info'
     const { state, saveCreds } = await useMultiFileAuthState('./auth_info');
 
@@ -53,9 +55,14 @@ const connectToWhatsApp = async () => {
             console.log('✅ Connected to WhatsApp');
         }
     });
-
     // Guarda las credenciales cada vez que se actualizan
+    
     sock.ev.on('creds.update', saveCreds);
+
+
+     //Actualizacion y creacion del singleton para utilizar el socket
+        console.log('SINGLETON ACTUALIZADO');
+        await SocketSingleton.getInstance().setSock(sock)
 
     return sock;
 };
