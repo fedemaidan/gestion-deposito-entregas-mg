@@ -1,11 +1,11 @@
 const FlowManager = require('../../../FlowControl/FlowManager');
-const EnviarMensaje = require('../../../Utiles/Funciones/Logistica/IniciarRuta/EnviarMensaje');
+const enviarMensaje = require('../../../services/EnviarMensaje/EnviarMensaje');
 const EnviarSiguienteEntrega = require('../../../Utiles/Funciones/Chofer/EnviarSiguienteEntrega');
 const { actualizarDetalleActual } = require('../../../services/google/Sheets/hojaDeruta');
 const RevisarDatos = require('../../../Utiles/Funciones/Chofer/RevisarDatos');
-const { enviarErrorPorWhatsapp } = require("../../../services/exepction/manejoErrores");
+const { enviarErrorPorWhatsapp } = require("../../../services/Excepcion/manejoErrores");
 
-module.exports = async function Reprogramado(userId, message, sock) {
+module.exports = async function Reprogramado(userId, message) {
     try {
         await FlowManager.getFlow(userId);
         const hojaRuta = FlowManager.userFlows[userId]?.flowData;
@@ -19,25 +19,22 @@ module.exports = async function Reprogramado(userId, message, sock) {
         const { Detalle_Actual = [], Detalles_Completados = [] } = hoja;
 
         if (Detalle_Actual.length === 0) {
-            await sock.sendMessage(userId, {
-                text: "⚠️ No hay entrega activa para reprogramar. Por favor, seleccioná una entrega primero."
-            });
+            await enviarMensaje(userId, "⚠️ No hay entrega activa para reprogramar. Por favor, seleccioná una entrega primero.");
             return;
         }
 
         const detalle = Detalle_Actual[0];
 
-        // 📦 Obtener datos actualizados de cliente y vendedor
+        // 📦 Obtener datos actualizados
         const datosActualizados = await RevisarDatos(detalle.ID_DET, hoja.ID_CAB);
 
-        // Aplicamos los cambios si existen
         if (datosActualizados) {
             detalle.Telefono = datosActualizados.cliente.telefono || detalle.Telefono;
             detalle.Cliente = datosActualizados.cliente.nombre || detalle.Cliente;
             detalle.Telefono_vendedor = datosActualizados.vendedor.telefono || detalle.Telefono_vendedor;
         }
 
-        // ✅ Guardamos el motivo de la reprogramación como observación
+        // Guardar motivo de reprogramación
         detalle.Observaciones = message;
 
         // 🔄 Actualizar hoja en Sheets
@@ -51,32 +48,28 @@ module.exports = async function Reprogramado(userId, message, sock) {
         // ✅ MENSAJES
 
         // Chofer
-        await sock.sendMessage(userId, { text: "🔁 La entrega fue marcada como *reprogramada*." });
+        await enviarMensaje(userId, "🔁 La entrega fue marcada como *reprogramada*.");
 
         // Vendedor
-      
         const mensajeVendedor = `📦 La entrega al cliente *${detalle.Cliente}* fue reprogramada.\n📝 *Motivo:* ${message}`;
         if (detalle.Telefono_vendedor) {
-            await EnviarMensaje(detalle.Telefono_vendedor + "@s.whatsapp.net", mensajeVendedor, sock);
+            await enviarMensaje(`${detalle.Telefono_vendedor}@s.whatsapp.net`, mensajeVendedor);
         }
 
         // Cliente
         const mensajeCliente = `📦 Hola! La entrega programada para hoy fue reprogramada.\n📝 *Motivo:* ${message}`;
         if (detalle.Telefono) {
-            await EnviarMensaje(detalle.Telefono + "@s.whatsapp.net", mensajeCliente, sock);
-            FlowManager.resetFlow(detalle.Telefono + "@s.whatsapp.net")
+            await enviarMensaje(`${detalle.Telefono}@s.whatsapp.net`, mensajeCliente);
+            FlowManager.resetFlow(`${detalle.Telefono}@s.whatsapp.net`);
         }
 
         // Siguiente entrega
-        await EnviarSiguienteEntrega(userId, hojaRuta, sock, userId);
+        await EnviarSiguienteEntrega(userId, hojaRuta);
 
     } catch (error) {
         console.error("❌ Error en Reprogramado:", error);
 
-        await enviarErrorPorWhatsapp(error, "metal grande", sock)
-
-        await sock.sendMessage(userId, {
-            text: "💥 Ocurrió un error al reprogramar la entrega. Por favor, intentá nuevamente."
-        });
+        await enviarMensaje(userId, "💥 Ocurrió un error al reprogramar la entrega. Por favor, intentá nuevamente.");
+        await enviarErrorPorWhatsapp(error, "metal grande");
     }
 };

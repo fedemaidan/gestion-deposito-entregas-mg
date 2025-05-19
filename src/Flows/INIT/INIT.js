@@ -1,20 +1,19 @@
 const { analizarIntencion } = require('../../Utiles/Chatgpt/AnalizarIntencion');
 const IniciarRutaFlow = require('../Logistica/IniciarRutaFlow');
 const FlowManager = require('../../FlowControl/FlowManager');
+const { enviarErrorPorWhatsapp } = require("../../services/Excepcion/manejoErrores");
+const enviarMensaje = require("../../services/EnviarMensaje/EnviarMensaje");
+
 const defaultFlow = {
-
-    async Init(userId, message, sock, messageType) {
+    async Init(userId, message, messageType) {
         try {
-
-            //si es texto se analiza en cambio si es una imagen o documento o document-caption este ya se encuentra analizado y salta el "Analizar intencion"
             let result;
-            await sock.sendMessage(userId, { text: "⏳ Analizando mensaje ⏳" });
 
-            if (messageType == "text" || messageType == "text_extended" || messageType == "audio") {
+            await enviarMensaje(userId, "⏳ Analizando mensaje ⏳");
+
+            if (messageType === "text" || messageType === "text_extended" || messageType === "audio") {
                 result = await analizarIntencion(message, userId);
-
-            }
-            else {
+            } else {
                 result = message;
             }
 
@@ -22,29 +21,29 @@ const defaultFlow = {
 
             switch (result.accion) {
                 case "Crear ruta":
-                    IniciarRutaFlow.start(userId, { data: result.data }, sock)
+                    await IniciarRutaFlow.start(userId, { data: result.data });
                     break;
 
                 case "No comprendido":
-                    await sock.sendMessage(userId, { text: "😕 No comprendi tu mensaje,❌ o no poseés los permisos necesarios  para esta acción. Por favor, repetilo." });
-                    FlowManager.resetFlow(userId)
+                    await enviarMensaje(userId, "😕 No comprendí tu mensaje,❌ o no poseés los permisos necesarios para esta acción. Por favor, repetilo.");
+                    FlowManager.resetFlow(userId);
                     break;
 
                 case "NoRegistrado":
-                    console.log("NO REGISTRADO")
+                    console.log("NO REGISTRADO");
                     break;
             }
+
             return;
         } catch (err) {
-            console.error('Error analizando la intención:', err.message);
+            console.error('❌ Error analizando la intención:', err.message);
+            await enviarErrorPorWhatsapp(err, "metal grande");
             return { accion: 'DESCONOCIDO' };
         }
     },
 
-    async handle(userId, message, sock) {
-        await sock.sendMessage(userId, {
-            text: 'No entendi tu mensaje, por favor repitelo',
-        });
+    async handle(userId, message) {
+        await enviarMensaje(userId, 'No entendí tu mensaje, por favor repetilo.');
     },
 };
 

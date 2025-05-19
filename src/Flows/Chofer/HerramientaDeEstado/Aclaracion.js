@@ -1,8 +1,11 @@
 const FlowManager = require('../../../FlowControl/FlowManager');
 const { actualizarDetalleActual } = require('../../../services/google/Sheets/hojaDeruta');
-module.exports = async function Aclaracion(userId, message, sock) {
+const enviarMensaje = require('../../../services/EnviarMensaje/EnviarMensaje');
+const { enviarErrorPorWhatsapp } = require("../../../services/Excepcion/manejoErrores");
+
+module.exports = async function Aclaracion(userId, message) {
     try {
-        await FlowManager.getFlow(userId)
+        await FlowManager.getFlow(userId);
         const hojaRuta = FlowManager.userFlows[userId]?.flowData;
 
         if (!hojaRuta || !hojaRuta.Hoja_Ruta || hojaRuta.Hoja_Ruta.length === 0) {
@@ -11,40 +14,33 @@ module.exports = async function Aclaracion(userId, message, sock) {
         }
 
         const hoja = hojaRuta.Hoja_Ruta[0];
-        const { Detalle_Actual = [], Detalles_Completados = [] } = hoja;
+        const { Detalle_Actual = [] } = hoja;
 
         if (Detalle_Actual.length === 0) {
-            await sock.sendMessage(userId, {
-                text: "⚠️ No hay entrega activa para agregar una aclaración. Por favor, seleccioná una entrega primero."
-            });
+            await enviarMensaje(userId, "⚠️ No hay entrega activa para agregar una aclaración. Por favor, seleccioná una entrega primero.");
             return;
         }
 
         const detalle = Detalle_Actual[0];
 
-        // Actualizamos la observación del detalle con el mensaje
+        // ✅ Guardar la observación
         detalle.Observaciones = message;
 
-        // Opcional: Lógica para subir imagen a Firebase y obtener la URL pública si se requiere
-
-        // 🔄 Actualizar el flow en memoria con el cambio realizado
+        // 🔄 Actualizar flujo
         FlowManager.setFlow(userId, "ENTREGACHOFER", "EntregaNOK", hojaRuta);
 
-        // Enviar confirmación al usuario
-        await sock.sendMessage(userId, {
-            text: `✅ *Aclaración agregada correctamente.*\n\n*Observación:* ${detalle.Observaciones}`
-        });
+        // Confirmación al usuario
+        await enviarMensaje(userId, `✅ *Aclaración agregada correctamente.*\n\n*Observación:* ${detalle.Observaciones}`);
 
-        // Opcional: Llamar a la función que actualice los cambios en Sheets (si es necesario)
-        await actualizarDetalleActual(hojaRuta)
-        // await actualizarEntregaEnSheet(hoja.ID_CAB, detalle);
+        // Actualizar Google Sheet
+        await actualizarDetalleActual(hojaRuta);
 
-        await sock.sendMessage(userId, {text: `📸 Por favor, subí la *foto del remito* para finalizar.`});
+        // Solicitar foto
+        await enviarMensaje(userId, "📸 Por favor, subí la *foto del remito* para finalizar.");
 
     } catch (error) {
         console.error("❌ Error en Aclaracion:", error);
-        await sock.sendMessage(userId, {
-            text: "💥 Ocurrió un error al agregar la aclaración. Por favor, intentá nuevamente."
-        });
+        await enviarMensaje(userId, "💥 Ocurrió un error al agregar la aclaración. Por favor, intentá nuevamente.");
+        await enviarErrorPorWhatsapp(error, "metal grande");
     }
 };

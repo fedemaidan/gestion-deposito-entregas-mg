@@ -1,40 +1,33 @@
 const { IniciarEntregaSteps } = require('../Chofer/IniciarEntregaSteps');
+const enviarMensaje = require('../../services/EnviarMensaje/EnviarMensaje');
 
 const IniciarEntregaFlow = {
 
-    async start(userId, data, sock) {
-
-        //await sock.sendMessage(userId, { text: '📝 Recopilando datos de la hoja de ruta deseada \n Listando datos detectados:' });
-
-        if (userId != null && sock != null) {
+    async start(userId, data) {
+        if (userId != null) {
             if (typeof IniciarEntregaSteps["PrimeraEleccionEntrega"] === 'function') {
-                await IniciarEntregaSteps["PrimeraEleccionEntrega"](userId, data, sock);
+                await IniciarEntregaSteps["PrimeraEleccionEntrega"](userId, data);
             } else {
-                console.log("El step solicitado no existe");
+                console.log("❌ El step 'PrimeraEleccionEntrega' no existe");
             }
         } else {
-            console.log("Ocurrio un error con los datos")
+            console.log("⚠️ Ocurrió un error con los datos de usuario");
         }
     },
 
-    async Handle(userId, message, currentStep, sock, messageType) {
+    async Handle(userId, message, currentStep, messageType) {
+        if (userId != null) {
+            console.log("📌 Step actual:", currentStep);
 
-        if (userId != null && sock != null) {
-
-            console.log("ACA ESTA EL STEP")
-            console.log(currentStep)
-
-            // Y que EgresoMaterialSteps es un objeto que contiene tus funciones
             if (typeof IniciarEntregaSteps[currentStep] === 'function') {
-                await IniciarEntregaSteps[currentStep](userId, message, sock);
+                await IniciarEntregaSteps[currentStep](userId, message);
             } else {
-                console.log("El step solicitado no existe");
+                console.log(`❌ El step solicitado '${currentStep}' no existe`);
             }
-
         } else {
-            console.log("Ocurrio un error con los datos")
+            console.log("⚠️ Ocurrió un error con los datos de usuario");
         }
     }
+};
 
-}
-module.exports = IniciarEntregaFlow
+module.exports = IniciarEntregaFlow;

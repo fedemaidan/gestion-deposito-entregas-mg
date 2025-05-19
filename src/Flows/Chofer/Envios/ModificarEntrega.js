@@ -1,6 +1,8 @@
 const FlowManager = require("../../../FlowControl/FlowManager");
 const { ResetDetalleHoja } = require("../../../services/google/Sheets/hojaDeruta");
-module.exports = async function ModificarEntrega(userId, message, sock) {
+const enviarMensaje = require("../../../services/EnviarMensaje/EnviarMensaje");
+
+module.exports = async function ModificarEntrega(userId, message) {
   try {
     await FlowManager.getFlow(userId);
     const hojaRuta = FlowManager.userFlows[userId]?.flowData;
@@ -15,13 +17,13 @@ module.exports = async function ModificarEntrega(userId, message, sock) {
 
     const eleccion = message.trim();
     if (isNaN(eleccion)) {
-      await sock.sendMessage(userId, { text: "⚠️ Por favor, respondé con un número válido de la entrega a modificar." });
+      await enviarMensaje(userId, "⚠️ Por favor, respondé con un número válido de la entrega a modificar.");
       return;
     }
 
     const indice = parseInt(eleccion) - 1;
     if (indice < 0 || indice >= completadas.length) {
-      await sock.sendMessage(userId, { text: "❌ Número fuera de rango. Intentá de nuevo." });
+      await enviarMensaje(userId, "❌ Número fuera de rango. Intentá de nuevo.");
       return;
     }
 
@@ -52,11 +54,11 @@ module.exports = async function ModificarEntrega(userId, message, sock) {
 🌆 *Localidad:* ${entregaSeleccionada.Localidad}
 📄 *Comprobante:* ${comprobanteTexto}`;
 
-    await sock.sendMessage(userId, { text: mensaje });
+    await enviarMensaje(userId, mensaje);
 
-    await sock.sendMessage(userId, {
-      text: 'indicá el nuevo resultado:\n1️⃣ Entregado OK ✅\n2️⃣ Entregado NOK ⚠️\n3️⃣ Rechazado ❌\n4️⃣ Cancelado 🚫'
-    });
+    await enviarMensaje(userId,
+      'indicá el nuevo resultado:\n1️⃣ Entregado OK ✅\n2️⃣ Entregado NOK ⚠️\n3️⃣ Rechazado ❌\n4️⃣ Cancelado 🚫'
+    );
 
     await FlowManager.setFlow(userId, "ENTREGACHOFER", "SecuenciaEntrega", hojaRuta);
 

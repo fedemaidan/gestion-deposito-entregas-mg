@@ -1,11 +1,12 @@
 const FlowManager = require('../../../FlowControl/FlowManager');
-const EnviarMensaje = require('../../../Utiles/Funciones/Logistica/IniciarRuta/EnviarMensaje');
+const enviarMensaje = require('../../../services/EnviarMensaje/EnviarMensaje');
 const enviarRemitoWhatsApp = require('../../../Utiles/Firebase/EnviarConformidad');
 const EnviarSiguienteEntrega = require('../../../Utiles/Funciones/Chofer/EnviarSiguienteEntrega');
 const { actualizarDetalleActual } = require('../../../services/google/Sheets/hojaDeruta');
 const RevisarDatos = require('../../../Utiles/Funciones/Chofer/RevisarDatos');
+const { enviarErrorPorWhatsapp } = require("../../../services/Excepcion/manejoErrores");
 
-module.exports = async function EntregaOK(userId, message, sock) {
+module.exports = async function EntregaOK(userId, message) {
     try {
         await FlowManager.getFlow(userId);
         const hojaRuta = FlowManager.userFlows[userId]?.flowData;
@@ -19,15 +20,13 @@ module.exports = async function EntregaOK(userId, message, sock) {
         const { Detalle_Actual = [], Detalles_Completados = [] } = hoja;
 
         if (Detalle_Actual.length === 0) {
-            await sock.sendMessage(userId, {
-                text: "⚠️ No hay entrega activa para subir el remito. Por favor, seleccioná una entrega primero."
-            });
+            await enviarMensaje(userId, "⚠️ No hay entrega activa para subir el remito. Por favor, seleccioná una entrega primero.");
             return;
         }
 
         const detalle = Detalle_Actual[0];
 
-        // 📦 Obtener datos actualizados de cliente y vendedor
+        // 📦 Obtener datos actualizados
         const datosActualizados = await RevisarDatos(detalle.ID_DET, hoja.ID_CAB);
 
         if (datosActualizados) {
@@ -36,7 +35,7 @@ module.exports = async function EntregaOK(userId, message, sock) {
             detalle.Telefono_vendedor = datosActualizados.vendedor.telefono || detalle.Telefono_vendedor;
         }
 
-        // 📸 Subir imagen y guardar la URL
+        // 📸 Guardar imagen
         const webUrl = message;
         detalle.Path = webUrl.imagenFirebase;
 
@@ -46,23 +45,24 @@ module.exports = async function EntregaOK(userId, message, sock) {
         const mensajeVendedor = `📦 La entrega al cliente *${detalle.Cliente}* fue realizada con éxito.`;
 
         // Cliente
-        if(detalle.Telefono) 
-            {
-                await EnviarMensaje(detalle.Telefono + "@s.whatsapp.net", mensajeCliente, sock);
-                await enviarRemitoWhatsApp(webUrl.imagenlocal, sock, detalle.Telefono + "@s.whatsapp.net");
-                FlowManager.resetFlow(detalle.Telefono + "@s.whatsapp.net")
-            }
+        if (detalle.Telefono) {
+            const jidCliente = `${detalle.Telefono}@s.whatsapp.net`;
+            await enviarMensaje(jidCliente, mensajeCliente);
+            await enviarRemitoWhatsApp(webUrl.imagenlocal, null, jidCliente);
+            FlowManager.resetFlow(jidCliente);
+        }
 
         // Vendedor
         if (detalle.Telefono_vendedor) {
-            await enviarRemitoWhatsApp(webUrl.imagenlocal, sock, detalle.Telefono_vendedor + "@s.whatsapp.net");
-            await EnviarMensaje(detalle.Telefono_vendedor + "@s.whatsapp.net", mensajeVendedor, sock);
+            const jidVendedor = `${detalle.Telefono_vendedor}@s.whatsapp.net`;
+            await enviarRemitoWhatsApp(webUrl.imagenlocal, null, jidVendedor);
+            await enviarMensaje(jidVendedor, mensajeVendedor);
         }
 
         // Chofer
-        await sock.sendMessage(userId, { text: mensajeChofer });
+        await enviarMensaje(userId, mensajeChofer);
 
-        // 🔄 Actualizar hoja de ruta
+        // 🔄 Actualizar hoja
         await actualizarDetalleActual(hojaRuta);
 
         hoja.Detalle_Actual = [];
@@ -70,12 +70,12 @@ module.exports = async function EntregaOK(userId, message, sock) {
 
         FlowManager.setFlow(userId, "ENTREGACHOFER", "PrimeraEleccionEntrega", hojaRuta);
 
-        await EnviarSiguienteEntrega(userId, hojaRuta, sock, userId);
+        // Próxima entrega
+        await EnviarSiguienteEntrega(userId, hojaRuta);
 
     } catch (error) {
         console.error("❌ Error en EntregaOK:", error);
-        await sock.sendMessage(userId, {
-            text: "💥 Ocurrió un error al subir el remito. Por favor, intentá nuevamente."
-        });
+        await enviarMensaje(userId, "💥 Ocurrió un error al subir el remito. Por favor, intentá nuevamente.");
+        await enviarErrorPorWhatsapp(error, "metal grande");
     }
 };

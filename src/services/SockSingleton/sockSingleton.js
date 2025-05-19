@@ -1,8 +1,7 @@
 const GetMessageType = require("../../Utiles/Mensajes/GetType");
 const messageResponder = require("../../Utiles/Mensajes/messageResponder");
-
+const { guardarSiNoExiste } = require("../../services/usuario/messageAppendBase");
 class SockSingleton {
-
     constructor() {
         if (!SockSingleton.instance) {
             this.sock = {}; // Se guardará la instancia única de sock
@@ -10,36 +9,43 @@ class SockSingleton {
         }
         return SockSingleton.instance;
     }
-
     async setSock(sockInstance) {
         this.sock = sockInstance;
-1234
-   this.sock.ev.on('messages.upsert', async (message) => {
-        
-        console.log('New message:', message);
-        if (message.type !== 'notify') return;
-        
-        const msg = message.messages[0];
-        if (!msg.message || msg.key.fromMe) return;
 
-        const sender = msg.key.remoteJid;
-        const messageType = GetMessageType(msg.message);
+        this.sock.ev.on('messages.upsert', async (message) => {
+            
+            if (message.type === 'notify') {
+                const msg = message.messages[0];
+                if (!msg.message || msg.key.fromMe) return;
 
-        await messageResponder(messageType, msg, this.sock, sender);
+                const sender = msg.key.remoteJid;
+                const messageType = GetMessageType(msg.message);
 
-    });
+                await messageResponder(messageType, msg, sender);
+            }
+            else if (message.type === 'append') {
+                const msg = message.messages[0];
+                if (!msg.message || msg.key.fromMe) return;
+
+                const sender = msg.key.remoteJid;
+                const messageType = GetMessageType(msg.message);
+
+                if (messageType === 'text' || messageType === 'text_extended') {
+                    await guardarSiNoExiste(sender, msg)
+                }
+            }
+
+        });
         setInterval(async () => await this.sock.sendPresenceUpdate('available'), 10 * 60 * 1000);
     }
-
     // Obtiene la instancia del sock
     getSock() {
-        return this.sock;
+    if (!this.sock) {
+        console.error('🛑 Sock aún no está listo, espera antes de enviar el mensaje.');
+        return null;
     }
-
-    getInstance () {
-        return SockSingleton.instance;
-    }   
-
+    return this.sock;
 }
 
+}
 module.exports = new SockSingleton();

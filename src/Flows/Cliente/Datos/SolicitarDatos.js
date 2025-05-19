@@ -1,6 +1,8 @@
 const FlowManager = require('../../../FlowControl/FlowManager');
+const { enviarErrorPorWhatsapp } = require("../../../services/Excepcion/manejoErrores");
+const enviarMensaje = require('../../../services/EnviarMensaje/EnviarMensaje');
 
-module.exports = async function SolicitarDatos(userId, message, sock) {
+module.exports = async function SolicitarDatos(userId, message) {
     try {
         await FlowManager.getFlow(userId);
 
@@ -27,8 +29,9 @@ module.exports = async function SolicitarDatos(userId, message, sock) {
 👤 *Vendedor:* ${detalleSeleccionado.Vendedor}
 📞 *Teléfono:* ${detalleSeleccionado.Telefono_vendedor}`;
 
-        await sock.sendMessage(userId, { text: mensaje });
+        await enviarMensaje(userId, mensaje);
     } catch (error) {
         console.error("❌ Error en SolicitarDatos:", error);
+        await enviarErrorPorWhatsapp(error, "metal grande");
     }
 };

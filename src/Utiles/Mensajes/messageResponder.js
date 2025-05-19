@@ -3,149 +3,139 @@ const FlowManager = require('../../FlowControl/FlowManager');
 const { saveImageToStorage } = require('../Firebase/storageHandler');
 const transcribeAudio = require('../Firebase/transcribeAudio');
 const downloadMedia = require('../Firebase/DownloadMedia');
+const resetAllFlows = require('../../Utiles/Funciones/FuncionesFlowmanager/resetAllFlows');
+const enviarMensaje = require('../../services/EnviarMensaje/EnviarMensaje');
 
-const messageResponder = async (messageType, msg, sock, sender) =>
-{
-   
+const messageResponder = async (messageType, msg, sender) => {
+    
+    
+    console.log("------------------------------------EN MESSAGE RESPONDER------------------------------------")
+        console.log(messageType)
+        console.log(msg)
+        console.log(sender)
+        console.log("------------------------------------------------------------------------")
+    
+    
     switch (messageType) {
         case 'text':
         case 'text_extended': {
             const text = msg.message.conversation || msg.message.extendedTextMessage?.text;
 
-            //RESET CODE
-                if (text.startsWith("RESET")) {
-                    const partes = text.split("#");
+            if (text?.startsWith("RESET")) {
+                const partes = text.split("#");
 
-                    // Caso 1: solo "RESET"
-                    if (partes.length === 1) {
+                if (partes.length === 1) {
+                    if (partes[0] === "RESET ALL") {
+                        await resetAllFlows(sender);
+                        console.log("⏳ RESET de TODOS los flows ejecutado.");
+                    } else {
                         FlowManager.resetFlow(sender);
-                        console.log("⏳⏳⏳⏳FLOW ELIMINADO CON ÉXITO para sender⏳⏳⏳⏳");
+                        console.log("⏳ RESET del sender ejecutado.");
                     }
-                    // Caso 2: "RESET#1122334455"
-                    else if (partes.length === 2) {
-                        const numero = partes[1].replace(/\D/g, '');
-                        const userIdDestino = `${numero}@s.whatsapp.net`;
-
-                        FlowManager.resetFlow(userIdDestino);
-                        console.log(`⏳⏳⏳⏳FLOW ELIMINADO CON ÉXITO para ${userIdDestino}⏳⏳⏳⏳`);
-                    }
-
-                    return;
+                } else if (partes.length === 2) {
+                    const numero = partes[1].replace(/\D/g, '');
+                    const userIdDestino = `${numero}@s.whatsapp.net`;
+                    FlowManager.resetFlow(userIdDestino);
+                    console.log(`⏳ RESET ejecutado para ${userIdDestino}`);
                 }
-            //-------------------------
 
+                return;
+            }
 
-            await FlowMapper.handleMessage(sender, text, sock, messageType);
+            await FlowMapper.handleMessage(sender, text, messageType);
             break;
         }
+
         case 'image': {
             try {
-                await sock.sendMessage(sender, { text: "⏳ Analizando imagen... ⏳" });
-                // Verificar si el mensaje tiene una imagen (no audio)
-                if (!msg.message || !msg.message.imageMessage) {
-                    await sock.sendMessage(sender, { text: "❌ No se encontró una imagen en el mensaje." });
+                await enviarMensaje(sender, "⏳ Analizando imagen... ⏳");
+
+                if (!msg.message?.imageMessage) {
+                    await enviarMensaje(sender, "❌ No se encontró una imagen en el mensaje.");
                     return;
                 }
 
-                console.log("❌❌❌❌❌❌❌❌❌❌❌❌❌❌")
-                console.log("ME ENCUENTRO EN EL CASE DE IMAGEN")
-                console.log("❌❌❌❌❌❌❌❌❌❌❌❌❌❌")
-
-                let ImageMessage = msg.message.imageMessage
-                    || (msg.message.imageWithCaptionMessage?.message?.imageMessage);
+                const ImageMessage = msg.message.imageMessage ||
+                    msg.message.imageWithCaptionMessage?.message?.imageMessage;
 
                 const urls = await saveImageToStorage(ImageMessage, sender, "image");
 
-                // Enviar el texto extraído al flujo de procesamiento
-                await FlowMapper.handleMessage(sender, urls, sock, 'image');
-
+                await FlowMapper.handleMessage(sender, urls, null, 'image');
             } catch (error) {
-                console.error("Error al procesar la imagen:", error);
-                await sock.sendMessage(sender, { text: "❌ Hubo un error al procesar tu imagen." });
+                console.error("❌ Error al procesar la imagen:", error);
+                await enviarMensaje(sender, "❌ Hubo un error al procesar tu imagen.");
             }
             break;
         }
+
         case 'video': {
-            const filePath = await DownloadMedia(msg.message, 'video');
+            const filePath = await downloadMedia(msg.message, 'video');
             if (filePath) {
-                await sock.sendMessage(sender, { text: `He recibido tu video y lo he guardado en: ${filePath}` });
+                await enviarMensaje(sender, `🎥 Video recibido y guardado en:\n${filePath}`);
             } else {
-                await sock.sendMessage(sender, { text: 'No pude guardar el video. Intenta nuevamente.' });
+                await enviarMensaje(sender, '❌ No pude guardar el video. Intenta nuevamente.');
             }
-            
             break;
         }
+
         case 'audio': {
             try {
-                await sock.sendMessage(sender, { text: "⏳ Escuchando tu mensaje... ⏳" });
-                if (!msg.message || !msg.message.audioMessage) {
-                    await sock.sendMessage(sender, { text: "❌ No se encontró un audio en el mensaje." });
+                await enviarMensaje(sender, "⏳ Escuchando tu mensaje... ⏳");
+
+                if (!msg.message?.audioMessage) {
+                    await enviarMensaje(sender, "❌ No se encontró un audio en el mensaje.");
                     return;
                 }
 
-                // Pasar el mensaje completo
-                const filePath = await downloadMedia(msg,'audio');
-
+                const filePath = await downloadMedia(msg, 'audio');
                 const transcripcion = await transcribeAudio(filePath);
 
-                console.log("Esta es la transcripcion")
-                console.log(transcripcion)
-                await FlowMapper.handleMessage(sender, transcripcion, sock, messageType);
+                console.log("📜 Transcripción de audio:", transcripcion);
+                await FlowMapper.handleMessage(sender, transcripcion, null, messageType);
             } catch (error) {
-                console.error("Error al procesar el audio:", error);
-                await sock.sendMessage(sender, { text: "❌ Hubo un error al procesar tu audio." });
+                console.error("❌ Error al procesar el audio:", error);
+                await enviarMensaje(sender, "❌ Hubo un error al procesar tu audio.");
             }
             break;
         }
+
         case 'document':
         case 'document-caption': {
             try {
-                await sock.sendMessage(sender, { text: "⏳ Analizando documento... ⏳" });
-                if (!msg || !msg.message) {
-                    console.error("❌ El objeto 'msg' no tiene la propiedad 'message'");
-                    await sock.sendMessage(sender, { text: "❌ Hubo un problema al procesar tu documento." });
+                await enviarMensaje(sender, "⏳ Analizando documento... ⏳");
+
+                if (!msg?.message) {
+                    console.error("❌ msg.message está vacío");
+                    await enviarMensaje(sender, "❌ Hubo un problema al procesar tu documento.");
                     return;
                 }
 
-                // Verificar si el mensaje contiene un documento
-                let docMessage = msg.message.documentMessage
-                    || (msg.message.documentWithCaptionMessage?.message?.documentMessage);
-
+                const docMessage = msg.message.documentMessage ||
+                    msg.message.documentWithCaptionMessage?.message?.documentMessage;
 
                 if (!docMessage) {
-                    console.error("❌ El mensaje no contiene un documento válido.");
-                    await sock.sendMessage(sender, { text: "❌ No se encontró un documento adjunto." });
+                    await enviarMensaje(sender, "❌ No se encontró un documento adjunto.");
                     return;
                 }
 
-                // Extraer la URL y el nombre del archivo
-                const fileUrl = docMessage.url;
-                const fileName = docMessage.fileName || "archivo.pdf";
-
-                console.log(`📄 Documento recibido: ${fileName}, URL: ${fileUrl}`);
-
-                // Guardar el documento y obtener su ruta
                 const transcripcion = await saveImageToStorage(docMessage, sender, "document");
                 if (!transcripcion) {
-                    console.error("❌ No se pudo obtener el documento.");
-                    await sock.sendMessage(sender, { text: "❌ No se pudo procesar tu documento." });
+                    await enviarMensaje(sender, "❌ No se pudo procesar tu documento.");
                     return;
                 }
-                // Llamar a la función de transcripción con la ruta obtenido
-                // Enviar el resultado a FlowMapper
-                await FlowMapper.handleMessage(sender, transcripcion, sock, "document-caption");
 
+                await FlowMapper.handleMessage(sender, transcripcion, null, "document-caption");
             } catch (error) {
                 console.error("❌ Error al procesar el documento:", error);
-                await sock.sendMessage(sender, { text: "❌ Hubo un error al procesar tu documento." });
+                await enviarMensaje(sender, "❌ Hubo un error al procesar tu documento.");
             }
             break;
         }
+
         default: {
-            await sock.sendMessage(sender, {
-                text: `No entiendo este tipo de mensaje (${messageType}). Por favor, envíame texto o un comando válido.`,
-            });
+            await enviarMensaje(sender, `❓ No entiendo este tipo de mensaje (${messageType}). Por favor, envíame texto, imagen o documento válido.`);
         }
     }
 };
+
 module.exports = messageResponder;

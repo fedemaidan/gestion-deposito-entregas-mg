@@ -1,9 +1,9 @@
-const enviarMensaje = require('../IniciarRuta/EnviarMensaje');
+const enviarMensaje = require('../../../../services/EnviarMensaje/EnviarMensaje');
 const FlowManager = require('../../../../FlowControl/FlowManager');
 const iniciarFlowsClientes = require('../IniciarRuta/IniciarClientes');
 const { guardarTelefonoLogistica } = require('../../../../services/google/Sheets/logisticaSheet');
 
-module.exports = async function IndicarComienzo(hojaRuta, sock,userId) {
+module.exports = async function IndicarComienzo(hojaRuta,userId) {
     try {
         if (!hojaRuta || !hojaRuta.Hoja_Ruta || hojaRuta.Hoja_Ruta.length === 0) {
             console.error("❌ Error: Hoja de ruta no proporcionada o vacía.");
@@ -19,9 +19,13 @@ module.exports = async function IndicarComienzo(hojaRuta, sock,userId) {
             return;
         }
 
-        await enviarMensajesClientes(Detalles, sock, userId);
-        await enviarMensajesAVendedores(Detalles, sock, userId);
-        await enviarMensajeChofer(Chofer, ID_CAB, Detalles, hojaRuta, sock);
+        console.log("UserID:", userId);
+        console.log("slipt:", userId.split('@')[0]);
+        
+        await guardarTelefonoLogistica(ID_CAB, userId.split('@')[0]);
+        await enviarMensajesClientes(Detalles, userId);
+        await enviarMensajesAVendedores(Detalles, userId);
+        await enviarMensajeChofer(Chofer, ID_CAB, Detalles);
 
         console.log("✅ Todos los mensajes han sido enviados correctamente.");
         //SOY EL CHOFER MANITO
@@ -32,12 +36,10 @@ module.exports = async function IndicarComienzo(hojaRuta, sock,userId) {
         }
         else
         {
-            sock.sendMessage(userId, { text:"⚠️ No se pudo obtener la información del chofer para esta entrega. Por favor, revisar la hoja de ruta."});
+            await enviarMensaje(userId, "⚠️ No se pudo obtener la información del chofer para esta entrega. Por favor, revisar la hoja de ruta.");
             FlowManager.resetFlow(userId);
             return
         }
-
-        await guardarTelefonoLogistica(ID_CAB, userId.split('@')[0]);
 
         return { Success: true, id: ID_CAB };
     } catch (error) {
@@ -47,22 +49,30 @@ module.exports = async function IndicarComienzo(hojaRuta, sock,userId) {
 };
 
 // 🧩 Función interna: mensaje a cada cliente
-async function enviarMensajesClientes(Detalles, sock, userId) {
+async function enviarMensajesClientes(hojaRuta, userId) {
+    if (!hojaRuta?.Hoja_Ruta?.length) {
+        console.warn("⚠️ Hoja de ruta no tiene datos de entregas.");
+        return;
+    }
+
+    const hoja = hojaRuta.Hoja_Ruta[0];
+    const { Detalles = [] } = hoja;
+
     for (const detalle of Detalles) {
         if (detalle.Telefono) {
             const mensaje = `📦 *Estimado/a ${detalle.Cliente},* su pedido llegará *hoy*. 📅\nLo mantendremos informado sobre su estado 🚚✨`;
-            await enviarMensaje(detalle.Telefono + "@s.whatsapp.net", mensaje, sock);
+            await enviarMensaje(`${detalle.Telefono}@s.whatsapp.net`, mensaje);
         } else {
             console.warn(`⚠️ Teléfono no disponible para el cliente ${detalle.Cliente}`);
             const mensajeAlUsuario = `⚠️ *Falta número de teléfono del cliente:* "${detalle.Cliente}". No se pudo enviar el aviso.`;
-            await sock.sendMessage(userId, { text: mensajeAlUsuario });
+            await enviarMensaje(userId, mensajeAlUsuario);
         }
     }
 
-    await iniciarFlowsClientes(hojaRuta);
+    await iniciarFlowsClientes(hojaRuta); // ✅ se pasa la hoja completa
 }
 
-async function enviarMensajesAVendedores(Detalles, sock, userId) {
+async function enviarMensajesAVendedores(Detalles, userId) {
     // Agrupar entregas por vendedor
     const entregasPorVendedor = {};
     const notificadosFaltantes = new Set();
@@ -83,7 +93,7 @@ async function enviarMensajesAVendedores(Detalles, sock, userId) {
         } else if (nombre && !notificadosFaltantes.has(`${nombre}-${cliente}`)) {
             // Notificar a logística si hay un vendedor sin teléfono
             const mensajeFaltante = `⚠️ El vendedor *${nombre}* no tiene teléfono asignado en la hoja de ruta para el cliente *${cliente}*.\nSe procederá sin notificación al vendedor.`;
-            await sock.sendMessage(userId, { text: mensajeFaltante });
+            await enviarMensaje(userId, mensajeFaltante);
             notificadosFaltantes.add(`${nombre}-${cliente}`);
         }
     }
@@ -94,18 +104,16 @@ async function enviarMensajesAVendedores(Detalles, sock, userId) {
         const mensaje = `📌 *Hola ${data.nombre}*, ya está en proceso el envío de tus entregas para los siguientes clientes: *${clientesTexto}*. 📦✅`;
 
         try {
-            await enviarMensaje(telefono + "@s.whatsapp.net", mensaje, sock);
+            await enviarMensaje(telefono + "@s.whatsapp.net", mensaje);
         } catch (err) {
             console.error(`❌ Error al enviar mensaje a ${data.nombre}:`, err);
-            await sock.sendMessage(userId, {
-                text: `⚠️ No se pudo notificar al vendedor *${data.nombre}*.`
-            });
+            await enviarMensaje(userId, `⚠️ No se pudo notificar al vendedor *${data.nombre}*.`);
         }
     }
 }
 
 // 🧩 Función interna: mensaje al chofer + guardar estado
-async function enviarMensajeChofer(Chofer, ID_CAB, Detalles, hojaRuta, sock) {
+async function enviarMensajeChofer(Chofer, ID_CAB, Detalles) {
     if (Chofer?.Telefono) {
         let mensaje = `🚛 *Hola ${Chofer.Nombre}*, tenés que realizar las siguientes entregas para la hoja *${ID_CAB}*:\n\n`;
 
@@ -114,7 +122,7 @@ async function enviarMensajeChofer(Chofer, ID_CAB, Detalles, hojaRuta, sock) {
         });
 
         mensaje += "\n🚛 *Elegí tu próximo destino y manos a la obra*";
-        await enviarMensaje(Chofer.Telefono + "@s.whatsapp.net", mensaje, sock);
+        await enviarMensaje(Chofer.Telefono + "@s.whatsapp.net", mensaje);
 
         console.log("ENTRO AL ENVIAR MENSAJE DEL CHOFER Y GUARDO EL ESTADO BIEN")
     } else {

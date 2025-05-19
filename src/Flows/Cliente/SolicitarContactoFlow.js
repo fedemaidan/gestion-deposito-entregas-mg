@@ -2,13 +2,11 @@ const { SolicitarContactoSteps } = require('../Cliente/SolicitarContactoSteps');
 
 const IniciarEntregaFlow = {
 
-    async start(userId, data, sock) {
-
-        //await sock.sendMessage(userId, { text: '📝 Recopilando datos de la hoja de ruta deseada \n Listando datos detectados:' });
-
-        if (userId != null && sock != null) {
+    async start(userId, data) {
+        
+        if (userId != null) {
             if (typeof SolicitarContactoSteps["SolicitarDatos"] === 'function') {
-                await SolicitarContactoSteps["SolicitarDatos"](userId, data, sock);
+                await SolicitarContactoSteps["SolicitarDatos"](userId, data);
             } else {
                 console.log("El step solicitado no existe");
             }
@@ -17,16 +15,16 @@ const IniciarEntregaFlow = {
         }
     },
 
-    async Handle(userId, message, currentStep, sock, messageType) {
+    async Handle(userId, message, currentStep, messageType) {
 
-        if (userId != null && sock != null) {
+        if (userId != null) {
 
             console.log("ACA ESTA EL STEP")
             console.log(currentStep)
 
             // Y que EgresoMaterialSteps es un objeto que contiene tus funciones
             if (typeof SolicitarContactoSteps[currentStep] === 'function') {
-                await SolicitarContactoSteps[currentStep](userId, message, sock);
+                await SolicitarContactoSteps[currentStep](userId, message);
             } else {
                 console.log("El step solicitado no existe");
             }

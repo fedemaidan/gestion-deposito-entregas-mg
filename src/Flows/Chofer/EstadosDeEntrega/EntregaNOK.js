@@ -1,11 +1,12 @@
 const FlowManager = require('../../../FlowControl/FlowManager');
-const EnviarMensaje = require('../../../Utiles/Funciones/Logistica/IniciarRuta/EnviarMensaje');
+const enviarMensaje = require('../../../services/EnviarMensaje/EnviarMensaje');
 const enviarRemitoWhatsApp = require('../../../Utiles/Firebase/EnviarConformidad');
 const EnviarSiguienteEntrega = require('../../../Utiles/Funciones/Chofer/EnviarSiguienteEntrega');
 const { actualizarDetalleActual } = require('../../../services/google/Sheets/hojaDeruta');
 const RevisarDatos = require('../../../Utiles/Funciones/Chofer/RevisarDatos');
+const { enviarErrorPorWhatsapp } = require("../../../services/Excepcion/manejoErrores");
 
-module.exports = async function EntregaNOK(userId, message, sock) {
+module.exports = async function EntregaNOK(userId, message) {
     try {
         await FlowManager.getFlow(userId);
         const hojaRuta = FlowManager.userFlows[userId]?.flowData;
@@ -19,9 +20,7 @@ module.exports = async function EntregaNOK(userId, message, sock) {
         const { Detalle_Actual = [], Detalles_Completados = [] } = hoja;
 
         if (Detalle_Actual.length === 0) {
-            await sock.sendMessage(userId, {
-                text: "⚠️ No hay entrega activa para subir el remito. Por favor, seleccioná una entrega primero."
-            });
+            await enviarMensaje(userId, "⚠️ No hay entrega activa para subir el remito. Por favor, seleccioná una entrega primero.");
             return;
         }
 
@@ -30,7 +29,6 @@ module.exports = async function EntregaNOK(userId, message, sock) {
         // 📦 Obtener datos actualizados de cliente y vendedor
         const datosActualizados = await RevisarDatos(detalle.ID_DET, hoja.ID_CAB);
 
-        // Aplicamos los cambios si existen
         if (datosActualizados) {
             detalle.Telefono = datosActualizados.cliente.telefono || detalle.Telefono;
             detalle.Cliente = datosActualizados.cliente.nombre || detalle.Cliente;
@@ -42,25 +40,24 @@ module.exports = async function EntregaNOK(userId, message, sock) {
         detalle.Path = webUrl.imagenFirebase;
 
         // ✅ CHOFER
-        await EnviarMensaje(detalle.Telefono + "@s.whatsapp.net", `✅ Foto del remito y aclaración guardadas correctamente.`, sock);
+        await enviarMensaje(userId, "✅ Foto del remito y aclaración guardadas correctamente.");
 
-        // ✅ CLIENTE - Enviamos remito y aclaración
-        if(detalle.Telefono) 
-            {
-                const mensajeCliente = `📦 Hola! Algo sucedió con la entrega. Te acerco el remito y la aclaración del chofer.\n\n📝 *Aclaración:* ${detalle.Observaciones || "Sin aclaraciones."}`;
-                await EnviarMensaje(detalle.Telefono + "@s.whatsapp.net", mensajeCliente, sock);
-                await enviarRemitoWhatsApp(webUrl.imagenlocal, sock, detalle.Telefono + "@s.whatsapp.net");
-                FlowManager.resetFlow(detalle.Telefono + "@s.whatsapp.net")
-            }
-
-        // ✅ VENDEDOR - Notificamos problema
-        const mensajeVendedor = `⚠️ Hubo un *problema en la entrega* al cliente *${detalle.Cliente}*.\n\n📝 *Aclaración del chofer:* ${detalle.Observaciones || "Sin observaciones."}`;
-        if (detalle.Telefono_vendedor) {
-            await enviarRemitoWhatsApp(webUrl.imagenlocal, sock, detalle.Telefono_vendedor + "@s.whatsapp.net");
-            await EnviarMensaje(detalle.Telefono_vendedor + "@s.whatsapp.net", mensajeVendedor, sock);
+        // ✅ CLIENTE
+        if (detalle.Telefono) {
+            const mensajeCliente = `📦 Hola! Algo sucedió con la entrega. Te acerco el remito y la aclaración del chofer.\n\n📝 *Aclaración:* ${detalle.Observaciones || "Sin aclaraciones."}`;
+            await enviarMensaje(`${detalle.Telefono}@s.whatsapp.net`, mensajeCliente);
+            await enviarRemitoWhatsApp(webUrl.imagenlocal, null, `${detalle.Telefono}@s.whatsapp.net`);
+            FlowManager.resetFlow(`${detalle.Telefono}@s.whatsapp.net`);
         }
 
-        // 🔄 Actualizar Google Sheet si es necesario
+        // ✅ VENDEDOR
+        const mensajeVendedor = `⚠️ Hubo un *problema en la entrega* al cliente *${detalle.Cliente}*.\n\n📝 *Aclaración del chofer:* ${detalle.Observaciones || "Sin observaciones."}`;
+        if (detalle.Telefono_vendedor) {
+            await enviarRemitoWhatsApp(webUrl.imagenlocal, null, `${detalle.Telefono_vendedor}@s.whatsapp.net`);
+            await enviarMensaje(`${detalle.Telefono_vendedor}@s.whatsapp.net`, mensajeVendedor);
+        }
+
+        // 🔄 Actualizar hoja
         await actualizarDetalleActual(hojaRuta);
 
         hoja.Detalle_Actual = [];
@@ -68,13 +65,13 @@ module.exports = async function EntregaNOK(userId, message, sock) {
 
         FlowManager.setFlow(userId, "ENTREGACHOFER", "PrimeraEleccionEntrega", hojaRuta);
 
-        // 🛵 Enviar siguiente entrega
-        await EnviarSiguienteEntrega(userId, hojaRuta, sock, userId);
+        // 🛵 Siguiente entrega
+        await EnviarSiguienteEntrega(userId, hojaRuta);
 
     } catch (error) {
         console.error("❌ Error en EntregaNOK:", error);
-        await sock.sendMessage(userId, {
-            text: "💥 Ocurrió un error al procesar la entrega. Por favor, intentá nuevamente."
-        });
+        await enviarMensaje(userId, "💥 Ocurrió un error al procesar la entrega. Por favor, intentá nuevamente.");
+        await enviarErrorPorWhatsapp(error, "metal grande");
     }
 };
+

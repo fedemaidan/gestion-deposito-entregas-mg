@@ -13,3 +13,9 @@ npx sequelize-cli db:migrate:undo
 Inicializacion de datos:
 npx sequelize-cli db:seed
 npx sequelize-cli db:seed:undo
+
+
+ENV MODE: 
+production
+test
+development

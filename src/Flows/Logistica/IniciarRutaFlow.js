@@ -1,36 +1,37 @@
 const { IniciarRutaSteps } = require('../Logistica/IniciarRutaSteps');
+const enviarMensaje = require('../../services/EnviarMensaje/EnviarMensaje');
 
 const ConfirmarPedidoFlow = {
 
-    async start(userId, data, sock) {
+    async start(userId, data) {
+        await enviarMensaje(userId, '📝 Recopilando datos de la hoja de ruta deseada \n Listando datos detectados:');
 
-        await sock.sendMessage(userId, { text: '📝 Recopilando datos de la hoja de ruta deseada \n Listando datos detectados:' });
-        if (userId != null && sock != null) {
+        if (userId != null) {
             if (typeof IniciarRutaSteps["CrearRuta"] === 'function') {
-                await IniciarRutaSteps["CrearRuta"](userId, data, sock);
+                await IniciarRutaSteps["CrearRuta"](userId, data);
             } else {
-                console.log("El step solicitado no existe");
+                console.log("❌ El step 'CrearRuta' no existe");
             }
         } else {
-            console.log("Ocurrio un error con los datos")
+            console.log("❌ Ocurrió un error con los datos (userId inválido)");
         }
     },
 
-    async Handle(userId, message, currentStep, sock, messageType) {
-
-        if (userId != null && sock != null) {
-
-            // Y que EgresoMaterialSteps es un objeto que contiene tus funciones
+    async Handle(userId, message, currentStep) {
+        if (userId != null) {
             if (typeof IniciarRutaSteps[currentStep] === 'function') {
-                await IniciarRutaSteps[currentStep](userId, message, sock);
+                await IniciarRutaSteps[currentStep](userId, message);
             } else {
-                console.log("El step solicitado no existe");
+                console.log(`❌ El step '${currentStep}' no existe`);
             }
-
         } else {
-            console.log("Ocurrio un error con los datos")
+            console.log("❌ Ocurrió un error con los datos:");
+            console.log("userId:", userId);
+            console.log("message:", message);
+            console.log("currentStep:", currentStep);
         }
     }
 
-}
-module.exports = ConfirmarPedidoFlow
+};
+
+module.exports = ConfirmarPedidoFlow;

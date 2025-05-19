@@ -62,7 +62,7 @@ const connectToWhatsApp = async () =>
 
      //Actualizacion y creacion del singleton para utilizar el socket
         console.log('SINGLETON ACTUALIZADO');
-        await SocketSingleton.getInstance().setSock(sock)
+        await SocketSingleton.setSock(sock)
 
     return sock;
 };
