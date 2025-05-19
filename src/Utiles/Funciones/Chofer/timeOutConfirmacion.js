@@ -28,8 +28,6 @@ module.exports = function iniciarTimeoutConfirmacion(userId) {
 
         // 2. Esperar 5 segundos y ejecutar el paso real
         setTimeout(async () => {
-            const sock = await socketSingleton.getSock();
-
             // Validación extra por si ya se confirmó mientras tanto
             const flowFinal = await FlowManager.getFlow(userId);
             const hojaRutaFinal = flowFinal?.flowData;
@@ -38,7 +36,7 @@ module.exports = function iniciarTimeoutConfirmacion(userId) {
             logConId("⏰ Timeout final: ejecutando confirmación automática.");
 
             const mensajeSimulado = "1";
-            await ConfirmarSigEntrega(userId, mensajeSimulado, sock);
+            await ConfirmarSigEntrega(userId, mensajeSimulado);
         }, 5000);
 
     }, tiempoLimite);
