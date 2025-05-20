@@ -23,7 +23,7 @@ module.exports = async function IndicarComienzo(hojaRuta,userId) {
         console.log("slipt:", userId.split('@')[0]);
         
         await guardarTelefonoLogistica(ID_CAB, userId.split('@')[0]);
-        await enviarMensajesClientes(Detalles, userId);
+        await enviarMensajesClientes(hojaRuta, userId);
         await enviarMensajesAVendedores(Detalles, userId);
         await enviarMensajeChofer(Chofer, ID_CAB, Detalles);
 
@@ -50,6 +50,8 @@ module.exports = async function IndicarComienzo(hojaRuta,userId) {
 
 // 🧩 Función interna: mensaje a cada cliente
 async function enviarMensajesClientes(hojaRuta, userId) {
+    console.log("📄 Iniciando envío de mensajes a clientes...");
+
     if (!hojaRuta?.Hoja_Ruta?.length) {
         console.warn("⚠️ Hoja de ruta no tiene datos de entregas.");
         return;
@@ -58,19 +60,35 @@ async function enviarMensajesClientes(hojaRuta, userId) {
     const hoja = hojaRuta.Hoja_Ruta[0];
     const { Detalles = [] } = hoja;
 
-    for (const detalle of Detalles) {
-        if (detalle.Telefono) {
-            const mensaje = `📦 *Estimado/a ${detalle.Cliente},* su pedido llegará *hoy*. 📅\nLo mantendremos informado sobre su estado 🚚✨`;
-            await enviarMensaje(`${detalle.Telefono}@s.whatsapp.net`, mensaje);
-        } else {
-            console.warn(`⚠️ Teléfono no disponible para el cliente ${detalle.Cliente}`);
-            const mensajeAlUsuario = `⚠️ *Falta número de teléfono del cliente:* "${detalle.Cliente}". No se pudo enviar el aviso.`;
-            await enviarMensaje(userId, mensajeAlUsuario);
+    console.log(`📦 Hay ${Detalles.length} entregas en la hoja de ruta.`);
+
+    for (let i = 0; i < Detalles.length; i++) {
+        const detalle = Detalles[i];
+        const nombreCliente = detalle.Cliente?.trim() || "(Nombre no disponible)";
+        const telefono = detalle.Telefono?.trim();
+
+        console.log(`➡️ Procesando entrega #${i + 1}: Cliente="${nombreCliente}", Teléfono="${telefono}"`);
+
+        try {
+            if (telefono) {
+                const mensaje = `📦 *Estimado/a ${nombreCliente},* su pedido llegará *hoy*. 📅\nLo mantendremos informado sobre su estado 🚚✨`;
+                console.log(`✅ Enviando mensaje a cliente ${nombreCliente} (${telefono})...`);
+                await enviarMensaje(`${telefono}@s.whatsapp.net`, mensaje);
+            } else {
+                console.warn(`⚠️ Teléfono no disponible para el cliente ${nombreCliente}`);
+                const mensajeAlUsuario = `⚠️ *Falta número de teléfono del cliente:* "${nombreCliente}". No se pudo enviar el aviso.`;
+                console.log(`🔔 Avisando a userId ${userId} sobre cliente sin teléfono...`);
+                await enviarMensaje(userId, mensajeAlUsuario);
+            }
+        } catch (error) {
+            console.error(`🛑 Error al enviar mensaje para ${nombreCliente}:`, error);
         }
     }
 
-    await iniciarFlowsClientes(hojaRuta); // ✅ se pasa la hoja completa
+    console.log("✅ Finalizado el envío. Iniciando flows de clientes...");
+    await iniciarFlowsClientes(hojaRuta);
 }
+
 
 async function enviarMensajesAVendedores(Detalles, userId) {
     // Agrupar entregas por vendedor
