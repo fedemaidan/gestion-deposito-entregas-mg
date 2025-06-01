@@ -48,14 +48,14 @@ module.exports = async function EntregaOK(userId, message) {
         if (detalle.Telefono) {
             const jidCliente = `${detalle.Telefono}@s.whatsapp.net`;
             await enviarMensaje(jidCliente, mensajeCliente);
-            await enviarRemitoWhatsApp(webUrl.imagenlocal, null, jidCliente);
+            await enviarRemitoWhatsApp(webUrl.imagenlocal, jidCliente);
             FlowManager.resetFlow(jidCliente);
         }
 
         // Vendedor
         if (detalle.Telefono_vendedor) {
             const jidVendedor = `${detalle.Telefono_vendedor}@s.whatsapp.net`;
-            await enviarRemitoWhatsApp(webUrl.imagenlocal, null, jidVendedor);
+            await enviarRemitoWhatsApp(webUrl.imagenlocal, jidVendedor);
             await enviarMensaje(jidVendedor, mensajeVendedor);
         }
 

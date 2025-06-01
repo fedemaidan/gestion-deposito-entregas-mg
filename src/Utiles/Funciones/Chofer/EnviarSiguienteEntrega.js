@@ -1,8 +1,6 @@
 const enviarMensaje = require('../../../services/EnviarMensaje/EnviarMensaje');
-const { cerrarHojaDeRuta } = require('../../../services/google/Sheets/hojaDeruta');
 const FlowManager = require('../../../FlowControl/FlowManager');
 const BuscarHoja = require('../../../Utiles/Funciones/Logistica/IniciarRuta/BuscarHoja');
-const { leerTelefonoLogistica } = require('../../../services/google/Sheets/logisticaSheet');
 
 async function EnviarSiguienteEntrega(choferNumero, hojaRuta) {
     try {
@@ -44,29 +42,30 @@ async function EnviarSiguienteEntrega(choferNumero, hojaRuta) {
         // ✅ Si no quedan entregas pendientes
         if (hoja.Detalles.length === 0) {
             console.log("✅ Todas las entregas han sido completadas.");
-            const mensajeFinalizado = `✅ *Todas las entregas han sido completadas.* 🚚✨\nGracias por tu trabajo, ¡hasta la próxima!`;
-            await enviarMensaje(choferNumero, mensajeFinalizado);
-
-            // Notificar a logística
-            const telefonoLogistica = await leerTelefonoLogistica(ID_CAB);
-            if (telefonoLogistica) {
-                const mensajeLogistica = `📦 El chofer *${Chofer.Nombre}* (${Chofer.Telefono}) finalizó todas las entregas de la hoja *${ID_CAB}*.`;
-                await enviarMensaje(`${telefonoLogistica}@s.whatsapp.net`, mensajeLogistica);
-                console.log(`📨 Notificación enviada a logística: ${telefonoLogistica}`);
-            } else {
-                console.warn("⚠️ No se encontró número de logística para esta hoja.");
-            }
-
-            await cerrarHojaDeRuta(hojaRuta);
-            await FlowManager.resetFlow(choferNumero);
+            await enviarMensaje(choferNumero,
+                `📦 *Completaste todas las entregas.*\n¿Querés cerrar la hoja de ruta o modificar alguna entrega?\n\n 1️⃣ Finalizar hoja de ruta\n 2️⃣ Modificar entrega anterior`
+            );
+            await FlowManager.setFlow(choferNumero, "ENTREGACHOFER", "TerminarEntregas", hojaRuta);
             return;
         }
 
         // 📋 Listado de entregas pendientes
         let mensaje = `📋 *Listado de Entregas Pendientes*\n\n`;
+
         hoja.Detalles.forEach((detalle, index) => {
-            mensaje += `${index + 1}. 📍 *Dirección:* ${detalle.Direccion_Entrega || "No especificada"}, *Localidad:* ${detalle.Localidad || "No especificada"}\n`;
+            const direccion = detalle.Direccion_Entrega || "No especificada";
+            const localidad = detalle.Localidad || "No especificada";
+            const cliente = detalle.Cliente || "Sin nombre";
+            const vendedor = detalle.Vendedor || "Sin vendedor";
+            const telefono = detalle.Telefono || detalle.Telefono_vendedor || "Sin teléfono";
+
+            mensaje += `*${index + 1}.* 🏢 *Cliente:* ${cliente}\n`;
+            mensaje += `   📍 *Dirección:* ${direccion}\n`;
+            mensaje += `   🌆 *Localidad:* ${localidad}\n`;
+            mensaje += `   👤 *Vendedor:* ${vendedor}\n`;
+            mensaje += `   📞 *Teléfono:* ${telefono}\n\n`;
         });
+
 
         mensaje += "\n🚛 *Elegí tu próximo destino y manos a la obra* \n🛠️ ¿Querés cambiar algo? Respondé con *MODIFICAR* o *CORREGIR*.";
 

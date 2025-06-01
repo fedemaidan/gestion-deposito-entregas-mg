@@ -45,7 +45,7 @@ module.exports = async function ModificarEntrega(userId, message) {
       ? `${comprobante.Letra} ${comprobante.Punto_Venta}-${comprobante.Numero}`
       : "--";
 
-    // Mostrar info al usuario
+    // Mostrar info al chofer
     const mensaje = `✏️ *Modificando entrega seleccionada*
 
 🆔 *ID Detalle:* ${entregaSeleccionada.ID_DET}
@@ -56,13 +56,23 @@ module.exports = async function ModificarEntrega(userId, message) {
 
     await enviarMensaje(userId, mensaje);
 
+    // ✅ NUEVO: Notificar al cliente que su entrega está siendo modificada
+    const telefonoCliente = entregaSeleccionada.Telefono?.trim();
+
+    if (telefonoCliente) {
+     const mensajeCliente = `📦 *El estado de tu entrega está siendo modificado por el chofer.*\nDisculpá el inconveniente.`;
+      await enviarMensaje(telefonoCliente+"@s.whatsapp.net", mensajeCliente);
+    } else {
+      console.warn(`⚠️ Teléfono del cliente no disponible para la entrega ${entregaSeleccionada.ID_DET}`);
+    }
+
     await enviarMensaje(userId,
-      'indicá el nuevo resultado:\n1️⃣ Entregado OK ✅\n2️⃣ Entregado NOK ⚠️\n3️⃣ Rechazado ❌\n4️⃣ Cancelado 🚫'
+      'Indicá el nuevo resultado:\n1️⃣ Entregado OK ✅\n2️⃣ Entregado NOK ⚠️\n3️⃣ Rechazado ❌\n4️⃣ Cancelado 🚫'
     );
 
     await FlowManager.setFlow(userId, "ENTREGACHOFER", "SecuenciaEntrega", hojaRuta);
 
-    console.log("✅ Entrega modificada y movida a Detalle_Actual.");
+    console.log("✅ Entrega modificada, cliente notificado y movida a Detalle_Actual.");
 
   } catch (error) {
     console.error("❌ Error en ModificarEntrega:", error);

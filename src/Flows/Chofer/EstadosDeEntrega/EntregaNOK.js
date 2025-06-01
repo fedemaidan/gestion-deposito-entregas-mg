@@ -46,14 +46,14 @@ module.exports = async function EntregaNOK(userId, message) {
         if (detalle.Telefono) {
             const mensajeCliente = `📦 Hola! Algo sucedió con la entrega. Te acerco el remito y la aclaración del chofer.\n\n📝 *Aclaración:* ${detalle.Observaciones || "Sin aclaraciones."}`;
             await enviarMensaje(`${detalle.Telefono}@s.whatsapp.net`, mensajeCliente);
-            await enviarRemitoWhatsApp(webUrl.imagenlocal, null, `${detalle.Telefono}@s.whatsapp.net`);
+            await enviarRemitoWhatsApp(webUrl.imagenlocal, `${detalle.Telefono}@s.whatsapp.net`);
             FlowManager.resetFlow(`${detalle.Telefono}@s.whatsapp.net`);
         }
 
         // ✅ VENDEDOR
         const mensajeVendedor = `⚠️ Hubo un *problema en la entrega* al cliente *${detalle.Cliente}*.\n\n📝 *Aclaración del chofer:* ${detalle.Observaciones || "Sin observaciones."}`;
         if (detalle.Telefono_vendedor) {
-            await enviarRemitoWhatsApp(webUrl.imagenlocal, null, `${detalle.Telefono_vendedor}@s.whatsapp.net`);
+            await enviarRemitoWhatsApp(webUrl.imagenlocal, `${detalle.Telefono_vendedor}@s.whatsapp.net`);
             await enviarMensaje(`${detalle.Telefono_vendedor}@s.whatsapp.net`, mensajeVendedor);
         }
 
