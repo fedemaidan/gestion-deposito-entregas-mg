@@ -53,13 +53,21 @@ module.exports = async function ConfirmarSigEntrega(userId, message) {
                 hoja.Detalle_Actual = [];
             }
 
-            let mensaje = `📋 *Listado de Entregas Pendientes*\n\n`;
-            hoja.Detalles.forEach((detalle, index) => {
-                mensaje += `${index + 1}. 📍 *Dirección:* ${detalle.Direccion_Entrega || "No especificada"}, *Localidad:* ${detalle.Localidad || "No especificada"}\n`;
-            });
+             Detalles.forEach((detalle, index) => {
+            const direccion = detalle.Direccion_Entrega || "No especificada";
+            const localidad = detalle.Localidad || "No especificada";
+            const cliente = detalle.Cliente || "Sin nombre";
+            const vendedor = detalle.Vendedor || "Sin vendedor";
+            const telefono = detalle.Telefono || detalle.Telefono_vendedor || "Sin teléfono";
 
-            mensaje += `\n🚛 *Elegí tu próximo destino y manos a la obra* \n🛠️ ¿Querés cambiar algo? Respondé con *MODIFICAR* o *CORREGIR*.`;
+            mensaje += `*${index + 1}.* 🏢 *Cliente:* ${cliente}\n`;
+            mensaje += `   📍 *Dirección:* ${direccion}\n`;
+            mensaje += `   🌆 *Localidad:* ${localidad}\n`;
+            mensaje += `   👤 *Vendedor:* ${vendedor}\n`;
+            mensaje += `   📞 *Teléfono:* ${telefono}\n\n`;
+        });
 
+        mensaje += "🚛 *Elegí tu próximo destino y manos a la obra*";
             await enviarMensaje(choferTelefono + "@s.whatsapp.net", mensaje);
 
             FlowManager.setFlow(userId, "ENTREGACHOFER", "PrimeraEleccionEntrega", hojaRuta);
