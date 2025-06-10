@@ -17,9 +17,9 @@
   "production": {
     "username": "postgres",
     "password": "sorby_development",
-    "database": "MGDB",
+    "database": "postgres",
     "host": "localhost",
-    "port": 5440,
+    "port": 5430,
     "dialect": "postgres"
   }
 }
