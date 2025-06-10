@@ -15,13 +15,11 @@
     "dialect": "mysql"
   },
   "production": {
-    "use_env_variable": "DATABASE_URL",
-    "dialect": "postgres",
-    "dialectOptions": {
-      "ssl": {
-        "require": true,
-        "rejectUnauthorized": false
-      }
-    }
+    "username": "postgres",
+    "password": "sorby_development",
+    "database": "MGDB",
+    "host": "localhost",
+    "port": 5440,
+    "dialect": "postgres"
   }
 }
