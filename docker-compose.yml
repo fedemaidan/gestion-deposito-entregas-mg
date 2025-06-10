@@ -22,9 +22,9 @@ services:
     restart: always
     depends_on:
       - db
-    environment:
-      NODE_ENV: development
-      DATABASE_URL: "postgres://sorby_development:sorby_development@host.docker.internal:5440/MGDB"
+    # environment:
+    #   NODE_ENV: product
+    #   DATABASE_URL: "postgres://sorby_development:sorby_development@host.docker.internal:5440/MGDB"
     ports:
       - "3005:3000"
     volumes:
