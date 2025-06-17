@@ -15,10 +15,10 @@
     "dialect": "mysql"
   },
   "production": {
-   "username": "sorby_development",
+    "username": "postgres",
     "password": "sorby_development",
-    "database": "MGDB",
-    "host": "host.docker.internal",
+    "database": "postgres",
+    "host": "localhost",
     "port": 5440,
     "dialect": "postgres"
   }
