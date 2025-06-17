@@ -42,6 +42,8 @@ module.exports = async function IndicarComienzo(hojaRuta, userId) {
 async function enviarMensajesClientes(hojaRuta, userId) {
     const hoja = hojaRuta.Hoja_Ruta[0];
     const { Detalles = [] } = hoja;
+    const nombreChofer = hojaRuta.Chofer?.Nombre?.trim() || "(Chofer no disponible)";
+    const patente = hojaRuta.Chofer?.Patente?.trim() || "(Patente no disponible)";
 
     for (let i = 0; i < Detalles.length; i++) {
         const detalle = Detalles[i];
@@ -50,7 +52,7 @@ async function enviarMensajesClientes(hojaRuta, userId) {
 
         try {
             if (telefono) {
-                const mensaje = `📦 *Estimado/a ${nombreCliente},* su pedido llegará *hoy*. 📅\nLo mantendremos informado sobre su estado 🚚✨`;
+                const mensaje = `📦 *Estimado/a ${nombreCliente},* su pedido llegará *hoy*. 📅\n🚚 Entrega a cargo de *${nombreChofer}* (Patente: *${patente}*).\nLo mantendremos informado sobre su estado. ✨`;
                 await enviarMensaje(`${telefono}@s.whatsapp.net`, mensaje);
             } else {
                 const mensajeAlUsuario = `⚠️ *Falta número de teléfono del cliente:* "${nombreCliente}". No se pudo enviar el aviso.`;
@@ -63,6 +65,7 @@ async function enviarMensajesClientes(hojaRuta, userId) {
 
     await iniciarFlowsClientes(hojaRuta);
 }
+
 
 async function enviarMensajesAVendedores(Detalles, Chofer, userId) {
     const entregasPorVendedor = {};
