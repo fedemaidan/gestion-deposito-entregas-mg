@@ -12,7 +12,8 @@ class SockSingleton {
     }
     async setSock(sockInstance) {
         this.sock = sockInstance;
-
+        
+        console.log("🟢🛑🟢 SockSingleton: Instancia de sock establecida correctamente.🟢🛑🟢");
         autoReporter.startAutoReport(this.sock, "metal-grande", "http://localhost:4000/api/reportar");
 
         
@@ -20,6 +21,18 @@ class SockSingleton {
             
             if (message.type === 'notify') {
                 const msg = message.messages[0];
+
+                if (msg.key.fromMe) {
+                    if (
+                        msg.message?.conversation === 'TODO_OK' || 
+                        msg.message?.extendedTextMessage?.text === 'TODO_OK'
+                    ) {
+                        console.log("🟢 Mensaje TODO_OK recibido, marcando ping como OK.");
+                        autoReporter.marcarPingOK();
+                    }
+                     return;
+                    }
+
                 if (!msg.message || msg.key.fromMe) return;
 
                 const sender = msg.key.remoteJid;
@@ -40,8 +53,7 @@ class SockSingleton {
             }
 
         });
-        setInterval(async () => await this.sock.sendPresenceUpdate('available'), 10 * 60 * 1000);
-    }
+      }
     // Obtiene la instancia del sock
     getSock() {
     if (!this.sock) {
