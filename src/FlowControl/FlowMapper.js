@@ -7,12 +7,6 @@ class FlowMapper {
     async handleMessage(userId, message, messageType) {
         let flow = await FlowManager.getFlow(userId);
 
-        console.log("------------------------------------ACTUAL flow------------------------------------")
-        console.log(flow)
-        console.log(message)
-        console.log(messageType)
-        console.log("------------------------------------------------------------------------")
-
         if (flow && flow.flowName) {
             switch (flow.flowName) {
                 case 'INICIARRUTA':

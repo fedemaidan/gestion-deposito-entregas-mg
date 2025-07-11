@@ -8,14 +8,6 @@ const enviarMensaje = require('../../services/EnviarMensaje/EnviarMensaje');
 
 const messageResponder = async (messageType, msg, sender) => {
     
-    
-    console.log("------------------------------------EN MESSAGE RESPONDER------------------------------------")
-        console.log(messageType)
-        console.log(msg)
-        console.log(sender)
-        console.log("------------------------------------------------------------------------")
-    
-    
     switch (messageType) {
         case 'text':
         case 'text_extended': {

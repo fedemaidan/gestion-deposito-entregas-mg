@@ -14,19 +14,20 @@ async function BuscarHoja(userId, text) {
         }
 
         // Estructura del JSON final
+        // Estructura del JSON final
         const hojaRuta = {
-            confirmado : false,
+            confirmado: false,
             Hoja_Ruta: [
                 {
                     ID_CAB: text,
                     Fecha: cabeceraConDetalles.cabecera.Fecha || "",
-                    Hora_Salida: cabeceraConDetalles.cabecera.Hora_Salida || "",
+                    Hora_Salida: cabeceraConDetalles.cabecera["Hora Salida"] || "",
                     Cerrado: cabeceraConDetalles.cabecera.Cerrado === "TRUE",
                     Detalles: cabeceraConDetalles.detalles.map(det => ({
                         ID_DET: det.ID_DET || "",
                         COD_CLI: det.COD_CLI || "",
                         Cliente: det.Cliente || "",
-                        Telefono: det.Cli_Telefono || "",
+                        Telefono: det.Cliente_Celular || "",
                         Comprobante: {
                             Letra: det.Comprobante_Letra || "",
                             Punto_Venta: det.Comprobante_PV || "",
@@ -36,20 +37,20 @@ async function BuscarHoja(userId, text) {
                         Localidad: det.Localidad || "",
                         Observaciones: det.Observaciones || "",
                         Vendedor: det.Vendedor || "",
-                        Telefono_vendedor: det.Ven_Telefono || "",
-                        Condicion_Pago: det.Condición_Pago|| "",
+                        Telefono_vendedor: det.Vendedor_Celular || "",
+                        Condicion_Pago: det["Condición_Pago"] || "",
                         Estado: det.Estado || "",
                         Incidencia: det.Incidencia || "",
-                        Path: det.Path || "",
+                        Imagen: det.Imagen || "", // <- actualizado
                     })),
-                    Detalle_Actual: [], // <- aquí iran la actual entrega
-                    Detalles_Completados: [] // <- aquí podés ir empujando los entregados
+                    Detalle_Actual: [],
+                    Detalles_Completados: []
                 }
             ],
             Chofer: {
                 Nombre: cabeceraConDetalles.cabecera.Chofer || "",
-                Telefono: cabeceraConDetalles.cabecera.Cho_Telefono || "",
-                Patente: cabeceraConDetalles.cabecera.Patente || ""
+                Patente: cabeceraConDetalles.cabecera.Patente || "",
+                Telefono: cabeceraConDetalles.cabecera.Chofer_Celular || ""
             }
         };
 

@@ -164,8 +164,8 @@ async function actualizarHoraSalidaCabecera(hojaRuta) {
         data.ID_CAB,
         data.Fecha || '',
         hojaRuta.Chofer?.Nombre || '',
-        hojaRuta.Chofer?.Telefono || '',
         hojaRuta.Chofer?.Patente || '',
+        hojaRuta.Chofer?.Telefono || '',
         horaActual, // Hora Salida
         data.Cerrado ? 'TRUE' : 'FALSE',
         '' // Print

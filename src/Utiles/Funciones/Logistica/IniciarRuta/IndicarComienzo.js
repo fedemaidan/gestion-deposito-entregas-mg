@@ -45,6 +45,13 @@ async function enviarMensajesClientes(hojaRuta, userId) {
     const nombreChofer = hojaRuta.Chofer?.Nombre?.trim() || "(Chofer no disponible)";
     const patente = hojaRuta.Chofer?.Patente?.trim() || "(Patente no disponible)";
 
+    // Fecha dinámica: "jueves 11 de julio"
+    const fechaHoy = new Date().toLocaleDateString('es-AR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long'
+    });
+
     for (let i = 0; i < Detalles.length; i++) {
         const detalle = Detalles[i];
         const nombreCliente = detalle.Cliente?.trim() || "(Nombre no disponible)";
@@ -52,7 +59,7 @@ async function enviarMensajesClientes(hojaRuta, userId) {
 
         try {
             if (telefono) {
-                const mensaje = `📦 *Estimado/a ${nombreCliente},* su pedido llegará *hoy*. 📅\n🚚 Entrega a cargo de *${nombreChofer}* (Patente: *${patente}*).\nLo mantendremos informado sobre su estado. ✨`;
+                const mensaje = `📦 Estimado/a *${nombreCliente}*, 🙌 soy *metaliA*, asistente de logística de *Metal Grande*.\nTe escribo para avisarte que tu pedido llegará *hoy* 🗓️ (${fechaHoy}).\n🚚 Entrega a cargo de *${nombreChofer}*: *${patente}*.\nTe mantendremos informado sobre su estado. ✨`;
                 await enviarMensaje(`${telefono}@s.whatsapp.net`, mensaje);
             } else {
                 const mensajeAlUsuario = `⚠️ *Falta número de teléfono del cliente:* "${nombreCliente}". No se pudo enviar el aviso.`;

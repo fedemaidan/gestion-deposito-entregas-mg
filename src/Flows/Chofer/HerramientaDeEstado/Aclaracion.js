@@ -5,6 +5,13 @@ const { enviarErrorPorWhatsapp } = require("../../../services/Excepcion/manejoEr
 
 module.exports = async function Aclaracion(userId, message) {
     try {
+
+const esURL = /^(https?:\/\/[^\s]+)/i.test(message);
+if (esURL) {
+    await enviarMensaje(userId, "⚠️ la aclaracion no puede ser una imagen. Por favor, escribí una aclaración válida.");
+    return;
+}
+
         await FlowManager.getFlow(userId);
         const hojaRuta = FlowManager.userFlows[userId]?.flowData;
 
@@ -31,6 +38,11 @@ module.exports = async function Aclaracion(userId, message) {
 
         // Confirmación al usuario
         await enviarMensaje(userId, `✅ *Aclaración agregada correctamente.*\n\n*Observación:* ${detalle.Observaciones}`);
+
+
+        if (typeof detalle.Imagen === 'object' && detalle.Imagen?.imagenFirebase) {
+            detalle.Imagen = detalle.Imagen.imagenFirebase;
+            }
 
         // Actualizar Google Sheet
         await actualizarDetalleActual(hojaRuta);
