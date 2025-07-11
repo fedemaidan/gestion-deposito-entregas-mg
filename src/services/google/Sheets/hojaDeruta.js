@@ -176,38 +176,51 @@ async function actualizarHoraSalidaCabecera(hojaRuta) {
 }
 
 async function cerrarHojaDeRuta(hojaRuta) {
-    const sheetId = process.env.GOOGLE_SHEET_ID;
     const data = hojaRuta.Hoja_Ruta[0];
-
+    const sheetId = process.env.GOOGLE_SHEET_ID;
     if (!data?.ID_CAB) {
         console.log('Falta ID_CAB para cerrar hoja de ruta.');
         return;
     }
 
-    // Obtener hoja actual para conservar valores existentes
-    const { cabecera: cabeceraActual } = await obtenerHojaRutaPorID(data.ID_CAB);
+    try {
+        // Traer cabecera para ubicar fila y columnas
+        const cabeceraRes = await sheets.spreadsheets.values.get({
+            spreadsheetId: sheetId,
+            range: 'Cabecera!A1:Z',
+        });
 
-    const horaExistente = cabeceraActual['Hora Salida'] || '';
+        const rows = cabeceraRes.data.values;
+        const headers = rows[0];
+        const filaIndex = rows.findIndex(row => row[0] === data.ID_CAB);
 
-    // Si no tiene hora guardada aún, usamos la del objeto si vino
-    const horaFinal = horaExistente || (data.Hora_Salida || '');
+        if (filaIndex === -1) {
+            throw new Error(`❌ No se encontró fila con ID_CAB = ${data.ID_CAB}`);
+        }
 
-    const valoresCabecera = [
-        data.ID_CAB,
-        data.Fecha || cabeceraActual['Fecha'] || '',
-        hojaRuta.Chofer?.Nombre || cabeceraActual['Chofer'] || '',
-        hojaRuta.Chofer?.Telefono || cabeceraActual['Cho_Telefono'] || '',
-        hojaRuta.Chofer?.Patente || cabeceraActual['Patente'] || '',
-        horaFinal,
-        'TRUE', // Cerrado
-        cabeceraActual['Print'] || ''
-    ];
+        const colCerrado = headers.indexOf("Cerrado");
+        if (colCerrado === -1) {
+            throw new Error(`❌ No se encontró columna "Cerrado"`);
+        }
 
-    await updateRow(sheetId, valoresCabecera, 'Cabecera!A1:Z', 0, data.ID_CAB);
+        const letraColumna = colToLetter(colCerrado + 1); // +1 porque A = 1
+        const celda = `Cabecera!${letraColumna}${filaIndex + 1}`;
 
-    console.log(`✅ Hoja de ruta cerrada. Hora de salida: ${horaFinal || 'no registrada'}`);
+        // Actualizar solo esa celda
+        await sheets.spreadsheets.values.update({
+            spreadsheetId: sheetId,
+            range: celda,
+            valueInputOption: 'USER_ENTERED',
+            resource: {
+                values: [["TRUE"]],
+            },
+        });
+
+        console.log(`✅ Cerrado actualizado en ${celda}`);
+    } catch (error) {
+        console.error('❌ Error al cerrar hoja de ruta:', error.message);
+    }
 }
-
 
 async function ResetDetalleHoja(hojaRuta) {
     const sheetId = process.env.GOOGLE_SHEET_ID;
