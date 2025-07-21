@@ -6,6 +6,7 @@ const { actualizarDetalleActual } = require('../../../services/google/Sheets/hoj
 const RevisarDatos = require('../../../Utiles/Funciones/Chofer/RevisarDatos');
 const { enviarErrorPorWhatsapp } = require("../../../services/Excepcion/manejoErrores");
 
+// ... importaciones y declaración del módulo
 module.exports = async function EntregaNOK(userId, message) {
     try {
         await FlowManager.getFlow(userId);
@@ -40,21 +41,51 @@ module.exports = async function EntregaNOK(userId, message) {
         detalle.Path = webUrl.imagenFirebase;
 
         // ✅ CHOFER
-        await enviarMensaje(userId, "✅ Foto del remito y aclaración guardadas correctamente.");
+        await enviarMensaje(userId, "✅ Foto del comprobante  recibido y guardado correctamente.");
+
+        const comprobante = `${detalle.Comprobante?.Letra || ''} ${detalle.Comprobante?.Punto_Venta || ''}-${detalle.Comprobante?.Numero || ''}`;
+        const nombreChofer = hojaRuta.Chofer?.Nombre || "No informado";
+        const aclaracion = detalle.Observaciones || "Sin observaciones.";
 
         // ✅ CLIENTE
         if (detalle.Telefono) {
-            const mensajeCliente = `📦 Hola! Algo sucedió con la entrega. Te acerco el remito y la aclaración del chofer.\n\n📝 *Aclaración:* ${detalle.Observaciones || "Sin aclaraciones."}`;
+            let mensajeCliente;
+            if (detalle.Estado === "No Entregado") {
+                mensajeCliente = `❌ *${detalle.Cliente}*: Nuestro chofer nos informó que tu pedido no pudo ser entregado. Por favor, comunicate con tu vendedor asignado para replanificar la entrega.`;
+            } else {
+                mensajeCliente = `⚠️ *${detalle.Cliente}*: Nuestro chofer nos informó que la entrega no pudo realizarse correctamente. Tu vendedor asignado se comunicará a la brevedad para solventar la falla lo antes posible.`;
+            }
+
             await enviarMensaje(`${detalle.Telefono}@s.whatsapp.net`, mensajeCliente);
             await enviarRemitoWhatsApp(webUrl.imagenlocal, `${detalle.Telefono}@s.whatsapp.net`);
             FlowManager.resetFlow(`${detalle.Telefono}@s.whatsapp.net`);
         }
 
         // ✅ VENDEDOR
-        const mensajeVendedor = `⚠️ Hubo un *problema en la entrega* al cliente *${detalle.Cliente}*.\n\n📝 *Aclaración del chofer:* ${detalle.Observaciones || "Sin observaciones."}`;
         if (detalle.Telefono_vendedor) {
-            await enviarRemitoWhatsApp(webUrl.imagenlocal, `${detalle.Telefono_vendedor}@s.whatsapp.net`);
-            await enviarMensaje(`${detalle.Telefono_vendedor}@s.whatsapp.net`, mensajeVendedor);
+            const jidVendedor = `${detalle.Telefono_vendedor}@s.whatsapp.net`;
+            let mensajeVendedor;
+
+            if (detalle.Estado === "No Entregado") {
+                mensajeVendedor = `❌ *ATENCIÓN:* La siguiente entrega fue marcada como *NO ENTREGADO*.
+👤 *Cliente:* ${detalle.Cliente}
+🧾 *Comprobante:* ${comprobante}
+📌 *Dirección:* ${detalle.Direccion_Entrega || "No especificada"}
+👷‍♂️ *Chofer:* ${nombreChofer}
+📝 *Aclaración del chofer:* ${aclaracion}
+📞 *Acción:* Comunicarse con el cliente para replanificar entrega`;
+            } else {
+                mensajeVendedor = `⚠️ *ATENCIÓN:* La siguiente entrega fue marcada como *ENTREGADO NOK*.
+👤 *Cliente:* ${detalle.Cliente}
+🧾 *Comprobante:* ${comprobante}
+📌 *Dirección:* ${detalle.Direccion_Entrega || "No especificada"}
+👷‍♂️ *Chofer:* ${nombreChofer}
+📝 *Aclaración del chofer:* ${aclaracion}
+📞 *Acción:* Comunicarse con el cliente para validar la falla y replanificar entrega`;
+            }
+
+            await enviarMensaje(jidVendedor, mensajeVendedor);
+            await enviarRemitoWhatsApp(webUrl.imagenlocal, jidVendedor);
         }
 
         // 🔄 Actualizar hoja
@@ -74,4 +105,3 @@ module.exports = async function EntregaNOK(userId, message) {
         await enviarErrorPorWhatsapp(error, "metal grande");
     }
 };
-

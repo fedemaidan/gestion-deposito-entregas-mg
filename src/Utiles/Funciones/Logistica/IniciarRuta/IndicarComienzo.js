@@ -59,8 +59,21 @@ async function enviarMensajesClientes(hojaRuta, userId) {
 
         try {
             if (telefono) {
-                const mensaje = `📦 Estimado/a *${nombreCliente}*, 🙌 soy *metaliA*, asistente de logística de *Metal Grande*.\nTe escribo para avisarte que tu pedido llegará *hoy* 🗓️ (${fechaHoy}).\n🚚 Entrega a cargo de *${nombreChofer}*: *${patente}*.\nTe mantendremos informado sobre su estado. ✨`;
+                // Mensaje principal
+                const mensaje = `Hola *${nombreCliente}*! 🤖 Soy *metaliA*, asistente virtual de logística de *METALGRANDE*.
+Tu pedido *${detalle.Comprobante?.Letra || ''}-${detalle.Comprobante?.Punto_Venta || ''}-${detalle.Comprobante?.Numero || ''}* está programado para ser entregado *hoy* 🗓️ en *${detalle.Direccion_Entrega || "(Dirección no disponible)"}*.
+🚚 Entrega a cargo de:
+* Chofer: *${nombreChofer}*
+* Patente: *${patente}*`;
+
+                // Mensaje adicional
+                const mensajeExtra = `⚠️ Recordá que debés contar con personal/maquinaria idónea para la descarga del material.
+En caso de que no puedas recibir tu pedido, por favor contactá a tu vendedor asignado para reprogramar la entrega.
+👤 *Vendedor:* ${detalle.Vendedor || "No informado"}
+📞 *Celular:* ${detalle.Telefono_vendedor || "No disponible"}`;
+
                 await enviarMensaje(`${telefono}@s.whatsapp.net`, mensaje);
+                await enviarMensaje(`${telefono}@s.whatsapp.net`, mensajeExtra);
             } else {
                 const mensajeAlUsuario = `⚠️ *Falta número de teléfono del cliente:* "${nombreCliente}". No se pudo enviar el aviso.`;
                 await enviarMensaje(userId, mensajeAlUsuario);
@@ -72,7 +85,6 @@ async function enviarMensajesClientes(hojaRuta, userId) {
 
     await iniciarFlowsClientes(hojaRuta);
 }
-
 
 async function enviarMensajesAVendedores(Detalles, Chofer, userId) {
     const entregasPorVendedor = {};
@@ -86,15 +98,21 @@ async function enviarMensajesAVendedores(Detalles, Chofer, userId) {
         const nombre = det.Vendedor;
         const telefono = det.Telefono_vendedor;
         const cliente = det.Cliente;
+        const comprobante = `${det.Comprobante?.Letra || ''} ${det.Comprobante?.Punto_Venta || ''}-${det.Comprobante?.Numero || ''}`;
+        const celularCliente = det.Telefono?.trim() || "Sin número";
 
         if (telefono) {
             if (!entregasPorVendedor[telefono]) {
                 entregasPorVendedor[telefono] = {
                     nombre,
-                    clientes: new Set()
+                    entregas: []
                 };
             }
-            entregasPorVendedor[telefono].clientes.add(cliente);
+            entregasPorVendedor[telefono].entregas.push({
+                cliente,
+                comprobante,
+                celularCliente
+            });
         } else if (nombre && !notificadosFaltantes.has(`${nombre}-${cliente}`)) {
             const mensajeFaltante = `⚠️ El vendedor *${nombre}* no tiene teléfono asignado en la hoja de ruta para el cliente *${cliente}*.\nSe procederá sin notificación al vendedor.`;
             await enviarMensaje(userId, mensajeFaltante);
@@ -103,8 +121,11 @@ async function enviarMensajesAVendedores(Detalles, Chofer, userId) {
     }
 
     for (const [telefono, data] of Object.entries(entregasPorVendedor)) {
-        const clientesTexto = Array.from(data.clientes).map(c => `• ${c}`).join("\n");
-        const mensaje = `📌 *Hola ${data.nombre}*, ya está en proceso el envío de tus entregas para los siguientes clientes:\n${clientesTexto}\n\n🚚 Información del transporte:\n👤 *Chofer:* ${nombreChofer}\n📞 *Teléfono del chofer:* ${telefonoChofer}\n🚛 *Patente del camión:* ${patenteCamion}`;
+        const entregasTexto = data.entregas.map(e =>
+            `* 🏢 ${e.cliente} - 📄 ${e.comprobante} - 📞 Celular: ${e.celularCliente}`
+        ).join("\n");
+
+        const mensaje = `📌 Hola *${data.nombre}*. Ya está en proceso el envío de tus entregas para los siguientes clientes:\n${entregasTexto}\n\n🚚 Información del transporte:\n👤 *Chofer:* ${nombreChofer}\n📞 *Teléfono del chofer:* ${telefonoChofer}\n🚛 *Patente del camión:* ${patenteCamion}`;
 
         try {
             await enviarMensaje(`${telefono}@s.whatsapp.net`, mensaje);
@@ -117,23 +138,25 @@ async function enviarMensajesAVendedores(Detalles, Chofer, userId) {
 
 async function enviarMensajeChofer(Chofer, ID_CAB, Detalles) {
     if (Chofer?.Telefono) {
-        let mensaje = `🚛 *Hola ${Chofer.Nombre}*, tenés que realizar las siguientes entregas para la hoja *${ID_CAB}*:\n\n`;
+        let mensaje = `🚛 Hola *${Chofer.Nombre}*. Fuiste asignado a la Hoja de Ruta *${ID_CAB}* que incluye las siguientes entregas:\n\n`;
 
         Detalles.forEach((detalle, index) => {
+            const cliente = detalle.Cliente || "Sin nombre";
+            const celular = detalle.Telefono?.trim() || "Sin teléfono";
             const direccion = detalle.Direccion_Entrega || "No especificada";
             const localidad = detalle.Localidad || "No especificada";
-            const cliente = detalle.Cliente || "Sin nombre";
             const vendedor = detalle.Vendedor || "Sin vendedor";
-            const telefono = detalle.Telefono || detalle.Telefono_vendedor || "Sin teléfono";
+            const comprobante = `${detalle.Comprobante?.Letra || ''} ${detalle.Comprobante?.Punto_Venta || ''}-${detalle.Comprobante?.Numero || ''}`;
 
-            mensaje += `*${index + 1}.* 🏢 *Cliente:* ${cliente}\n`;
+            mensaje += `${index + 1}. 🏢 *Cliente:* ${cliente}\n`;
+            mensaje += `   📞 *Celular:* ${celular}\n`;
             mensaje += `   📍 *Dirección:* ${direccion}\n`;
             mensaje += `   🌆 *Localidad:* ${localidad}\n`;
             mensaje += `   👤 *Vendedor:* ${vendedor}\n`;
-            mensaje += `   📞 *Teléfono:* ${telefono}\n\n`;
+            mensaje += `   🧾 *Comprobante:* ${comprobante}\n\n`;
         });
 
-        mensaje += "🚛 *Elegí tu próximo destino y manos a la obra*";
+        mensaje += `🚛 Por favor indicá cuál será tu primer entrega.`;
         await enviarMensaje(`${Chofer.Telefono}@s.whatsapp.net`, mensaje);
     } else {
         console.error("⚠️ No se pudo enviar mensaje al Chofer: Teléfono no disponible.");

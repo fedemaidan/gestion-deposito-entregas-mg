@@ -25,9 +25,16 @@ const defaultFlow = {
                     break;
 
                 case "No comprendido":
-                    await enviarMensaje(userId, "😕 No comprendí tu mensaje,❌ o no poseés los permisos necesarios para esta acción. Por favor, repetilo.");
+                    await enviarMensaje(userId, `🤖 Aún estoy en desarrollo y no puedo comprender todos los mensajes recibidos. 
+Si necesitás contactar a nuestro equipo de ventas, por favor comunicate a nuestros WhatsApp de lunes a viernes de 8:00 a 17:00 y sábados de 8:00 a 13:00.
+
+📍 *Canning:* +54 9 11 3173-1111
+📍 *Monte Grande:* +54 9 11 5995-0000
+📍 *San Vicente:* +54 9 11 4402-8710
+📍 *Tristán Suarez:* +54 9 11 5952-3373`);
                     FlowManager.resetFlow(userId);
                     break;
+
 
                 case "NoRegistrado":
                     console.log("NO REGISTRADO");

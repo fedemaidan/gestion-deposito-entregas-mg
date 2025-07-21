@@ -40,26 +40,38 @@ module.exports = async function EntregaOK(userId, message) {
         detalle.Path = webUrl.imagenFirebase;
 
         // ✅ Mensajes
-        const mensajeChofer = "✅ Foto del remito recibida y guardada correctamente.";
-        const mensajeCliente = `✅ La entrega fue realizada con éxito.`;
-        const mensajeVendedor = `📦 La entrega al cliente *${detalle.Cliente}* fue realizada con éxito.`;
+      
 
         // Cliente
         if (detalle.Telefono) {
-            const jidCliente = `${detalle.Telefono}@s.whatsapp.net`;
-            await enviarMensaje(jidCliente, mensajeCliente);
-            await enviarRemitoWhatsApp(webUrl.imagenlocal, jidCliente);
-            FlowManager.resetFlow(jidCliente);
+            const mensajeCliente = `✅ La entrega fue realizada con éxito. ¡Gracias por confiar tu compra a *METALGRANDE*!`;
+            await enviarMensaje(`${detalle.Telefono}@s.whatsapp.net`, mensajeCliente);
+
+            // Enviar imagen del remito
+            await enviarRemitoWhatsApp(webUrl.imagenlocal, `${detalle.Telefono}@s.whatsapp.net`);
+
+            // Finalizar flujo
+            FlowManager.resetFlow(`${detalle.Telefono}@s.whatsapp.net`);
         }
+
 
         // Vendedor
         if (detalle.Telefono_vendedor) {
             const jidVendedor = `${detalle.Telefono_vendedor}@s.whatsapp.net`;
-            await enviarRemitoWhatsApp(webUrl.imagenlocal, jidVendedor);
+            const comprobante = `${detalle.Comprobante?.Letra || ''} ${detalle.Comprobante?.Punto_Venta || ''}-${detalle.Comprobante?.Numero || ''}`;
+
+            const mensajeVendedor = `✅ *Entrega realizada con éxito:*
+👤 *Cliente:* ${detalle.Cliente}
+🧾 *Comprobante:* ${comprobante}
+📌 *Dirección:* ${detalle.Direccion_Entrega || "No especificada"}
+👷‍♂️ *Chofer:* ${hojaRuta.Chofer?.Nombre || "No informado"}`;
+
             await enviarMensaje(jidVendedor, mensajeVendedor);
+            await enviarRemitoWhatsApp(webUrl.imagenlocal, jidVendedor);
         }
 
         // Chofer
+          const mensajeChofer = "✅ Foto del comprobante  recibido y guardado correctamente.";
         await enviarMensaje(userId, mensajeChofer);
 
         // 🔄 Actualizar hoja

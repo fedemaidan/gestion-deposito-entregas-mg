@@ -47,17 +47,29 @@ module.exports = async function Reprogramado(userId, message) {
 
         // ✅ MENSAJES
 
+        const comprobante = `${detalle.Comprobante?.Letra || ''} ${detalle.Comprobante?.Punto_Venta || ''}-${detalle.Comprobante?.Numero || ''}`;
+        const nombreChofer = hojaRuta.Chofer?.Nombre || "No informado";
+        const aclaracion = detalle.Observaciones || "Sin motivo especificado.";
+
         // Chofer
         await enviarMensaje(userId, "🔁 La entrega fue marcada como *reprogramada*.");
 
         // Vendedor
-        const mensajeVendedor = `📦 La entrega al cliente *${detalle.Cliente}* fue reprogramada.\n📝 *Motivo:* ${message}`;
+        const mensajeVendedor = `🔁 *ATENCIÓN:* La siguiente entrega fue *REPROGRAMADA*.
+👤 *Cliente:* ${detalle.Cliente}
+🧾 *Comprobante:* ${comprobante}
+📌 *Dirección:* ${detalle.Direccion_Entrega || "No especificada"}
+👷‍♂️ *Chofer:* ${nombreChofer}
+📝 *Motivo:* ${aclaracion}
+📞 *Acción:* Comunicarse con el cliente para dar aviso que su entrega se replanifica`;
+
         if (detalle.Telefono_vendedor) {
             await enviarMensaje(`${detalle.Telefono_vendedor}@s.whatsapp.net`, mensajeVendedor);
         }
 
         // Cliente
-        const mensajeCliente = `📦 Hola! La entrega programada para hoy fue reprogramada.\n📝 *Motivo:* ${message}`;
+        const mensajeCliente = `🔁 *${detalle.Cliente}*: Tuvimos que *REPROGRAMAR* la entrega de tu pedido. Te avisaremos la nueva fecha. Si lo necesitás, podés comunicarte con tu vendedor asignado. ¡Gracias!`;
+
         if (detalle.Telefono) {
             await enviarMensaje(`${detalle.Telefono}@s.whatsapp.net`, mensajeCliente);
             FlowManager.resetFlow(`${detalle.Telefono}@s.whatsapp.net`);
@@ -68,7 +80,6 @@ module.exports = async function Reprogramado(userId, message) {
 
     } catch (error) {
         console.error("❌ Error en Reprogramado:", error);
-
         await enviarMensaje(userId, "💥 Ocurrió un error al reprogramar la entrega. Por favor, intentá nuevamente.");
         await enviarErrorPorWhatsapp(error, "metal grande");
     }

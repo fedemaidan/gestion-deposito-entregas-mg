@@ -33,16 +33,18 @@ module.exports = async function PrimeraEleccionEntrega(userId, message) {
                 return;
             }
 
-            let mensajeMod = "*📋 Entregas completadas disponibles para modificar:*\n";
+            let mensajeMod = "📋 *Entregas ya realizadas disponibles para modificar:*\n";
+
             completadas.forEach((det, index) => {
                 const comprobante = det.Comprobante?.Letra && det.Comprobante?.Punto_Venta && det.Comprobante?.Numero
                     ? `${det.Comprobante.Letra} ${det.Comprobante.Punto_Venta}-${det.Comprobante.Numero}`
                     : "--";
+                const estado = det.Estado || "Sin estado";
 
-                mensajeMod += `\n*${index + 1}.* 🆔 ${det.ID_DET} - 🏢 ${det.Cliente} - 📄 ${comprobante}`;
+                mensajeMod += `\n${index + 1}. 🆔 ${det.ID_DET} - 🏢 ${det.Cliente} - 📄 ${comprobante} - Estado: ${estado}`;
             });
 
-            mensajeMod += `\n\n📌 *Respondé con el número de la entrega que querés modificar.*`;
+            mensajeMod += `\n\n📌 *Respondé con el número de la entrega que querés modificar o CANCELAR para volver al listado anterior sin modificar nada.*`;
 
             await enviarMensaje(userId, mensajeMod);
 
@@ -75,13 +77,14 @@ module.exports = async function PrimeraEleccionEntrega(userId, message) {
             ? `${comprobante.Letra} ${comprobante.Punto_Venta}-${comprobante.Numero}`
             : "--";
 
-        const mensaje = `📌 *En proceso* 
+        const mensaje = `📌 Entrega a realizar:
 
-🆔 *ID Detalle:* ${detalleSeleccionado.ID_DET}
-🏢 *Cliente:* ${detalleSeleccionado.Cliente}
-📍 *Dirección:* ${detalleSeleccionado.Direccion_Entrega}
-🌆 *Localidad:* ${detalleSeleccionado.Localidad}
-📄 *Comprobante:* ${comprobanteTexto}`;
+🆔 ID Detalle: ${detalleSeleccionado.ID_DET}
+🏢 Cliente: ${detalleSeleccionado.Cliente}
+📞 Celular: ${detalleSeleccionado.Telefono?.trim() || "Sin número"}
+📍 Dirección: ${detalleSeleccionado.Direccion_Entrega}
+🌆 Localidad: ${detalleSeleccionado.Localidad}
+📄 Comprobante: ${comprobanteTexto}`;
 
         await enviarMensaje(userId, mensaje);
 
@@ -92,9 +95,13 @@ module.exports = async function PrimeraEleccionEntrega(userId, message) {
         // ⚠️ Aquí aún usamos sock solo para el timeout que lo necesita internamente
         timeOutConfirmacion(userId);
 
-        await enviarMensaje(userId,
-            `\n\n📌 *Por favor, confirmá tu próxima entrega respondiendo con:*\n1️⃣ *Sí, confirmar.*\n2️⃣ *No, cancelar.*\n\n⏳ *Si no se recibe una respuesta en los próximos 5 minutos, la entrega será confirmada automáticamente.*`
-        );
+        const mensajeconfirmacion = `📌 Por favor, confirmá tu próxima entrega respondiendo con:
+        1️⃣ Sí, confirmar.
+        2️⃣ No, cambiar.
+        ⏳ Si no se recibe una respuesta en los próximos 5 minutos, la entrega será confirmada automáticamente.`;
+
+
+        await enviarMensaje(userId, mensajeconfirmacion);
 
         console.log("✅ Detalle movido a Detalle_Actual.");
 

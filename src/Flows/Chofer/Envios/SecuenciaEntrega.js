@@ -33,29 +33,36 @@ module.exports = async function FinalizarEntrega(userId, message) {
             case "1":
                 nuevoEstado = "Entregado OK";
                 nextStep = "EntregaOK";
-                await enviarMensaje(userId, `✅ Se seleccionó *${nuevoEstado}*.\n📸 Por favor, subí la *foto del remito* para finalizar.`);
+                await enviarMensaje(userId,
+                    `✅ Se seleccionó *${nuevoEstado}*.\n📸 Por favor, subí la *foto del comprobante* con *firma, DNI y aclaración* de quien haya recibido la entrega, junto con *fecha y hora*.`);
                 break;
             case "2":
                 nuevoEstado = "Entregado NOK";
                 nextStep = "Aclaracion";
-                await enviarMensaje(userId, `⚠️ Se seleccionó *${nuevoEstado}*.\n📝 Por favor, contanos *qué pasó* con esta entrega.`);
+                await enviarMensaje(userId,
+                    `⚠️ Se seleccionó *${nuevoEstado}*.\n📝 Por favor, contanos *qué pasó* con esta entrega.`);
                 break;
             case "3":
-                nuevoEstado = "Rechazado";
+                nuevoEstado = "No Entregado";
                 nextStep = "Aclaracion";
-                await enviarMensaje(userId, `🚫 Se seleccionó *${nuevoEstado}*.\n📝 Por favor, indicá *el motivo* por el cual no se entregó.`);
+                await enviarMensaje(userId,
+                    `❌ Se seleccionó *${nuevoEstado}*.\n📝 Por favor, indicá *el motivo* por el cual no se entregó.`);
                 break;
             case "4":
                 nuevoEstado = "Reprogramado";
                 nextStep = "Reprogramado";
-                await enviarMensaje(userId, `🔁 Se seleccionó *${nuevoEstado}*.\n📨 De acuerdo, *enviando avisos al vendedor y cliente*, ¿por qué se reprogramó?`);
+                await enviarMensaje(userId,
+                    `🔁 Se seleccionó *${nuevoEstado}*.\n📨 Daré aviso al vendedor y al cliente.\n📝 Por favor, indicá *el motivo* por el cual se reprogramó.`);
                 break;
             default:
                 await enviarMensaje(userId,
-                    '❗ *Opción no válida.* Escribí 1, 2, 3 o 4 para indicar el resultado de la entrega.\n\n1️⃣ Entregado OK ✅\n2️⃣ Entregado NOK ⚠️\n3️⃣ Rechazado ❌\n4️⃣ Cancelado 🚫'
+                    `❗ *Opción no válida.* Escribí 1, 2, 3 o 4 para indicar el resultado de la entrega.\n\n1️⃣ Entregado OK ✅\n2️⃣ Entregado NOK ⚠️\n3️⃣ No Entregado ❌\n4️⃣ Reprogramado 🔁`
                 );
                 return;
         }
+
+
+
 
         // Solo actualiza el estado
         detalle.Estado = nuevoEstado;

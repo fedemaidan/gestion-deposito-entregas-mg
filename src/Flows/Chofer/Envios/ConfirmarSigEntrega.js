@@ -24,57 +24,58 @@ module.exports = async function ConfirmarSigEntrega(userId, message) {
 
             await enviarMensaje(userId,
                 'Cuando la entrega finalice, indícalo enviando un mensaje con el resultado de la entrega:\n' +
-                '1️⃣ Entregado OK ✅\n2️⃣ Entregado NOK ⚠️\n3️⃣ Rechazado ❌\n4️⃣ Cancelado 🚫'
+                '1️⃣ Entregado OK ✅\n2️⃣ Entregado NOK ⚠️\n3️⃣ No entregado ❌\n4️⃣ Reprogramado 🔁'
             );
 
             await IndicarActual(hoja.ID_CAB, detalleSeleccionado.ID_DET);
 
             if (detalleSeleccionado.Telefono) {
                 const telefonoCliente = detalleSeleccionado.Telefono;
-                const mensajeCliente = "📦 *Tu entrega ya está en camino.*\nNos estaremos comunicando en breve. ¡Gracias por tu paciencia!";
+                const mensajeCliente = "📦 ¡Tu entrega es la próxima! Asegurate de tener personal para la descarga. ¡Gracias! ";
                 await enviarMensaje(telefonoCliente + "@s.whatsapp.net", mensajeCliente);
             }
 
             FlowManager.setFlow(userId, "ENTREGACHOFER", "SecuenciaEntrega", hojaRuta);
             break;
+        case 2:
+        case 3:
+            await enviarMensaje(userId, "🔀 Seleccionaste *cambiar destino*");
 
-      case 2:
-case 3:
-    await enviarMensaje(userId, "❌ *Cambiando destino*");
+            const choferTelefono = hojaRuta.Chofer?.Telefono;
+            if (!hoja || !choferTelefono) {
+                await enviarMensaje(userId, "⚠️ No se pudo recuperar la hoja de ruta o el número del chofer.");
+                return;
+            }
 
-    const choferTelefono = hojaRuta.Chofer?.Telefono;
-    if (!hoja || !choferTelefono) {
-        await enviarMensaje(userId, "⚠️ No se pudo recuperar la hoja de ruta o el número del chofer.");
-        return;
-    }
+            // Devolver la entrega actual al listado
+            if (hoja.Detalle_Actual && hoja.Detalle_Actual.length > 0) {
+                hoja.Detalles.unshift(...hoja.Detalle_Actual);
+                hoja.Detalle_Actual = [];
+            }
 
-    // Devolver la entrega actual al listado
-    if (hoja.Detalle_Actual && hoja.Detalle_Actual.length > 0) {
-        hoja.Detalles.unshift(...hoja.Detalle_Actual);
-        hoja.Detalle_Actual = [];
-    }
+            // Mostrar los nuevos destinos disponibles
+            let mensaje = "🧭 *Destinos disponibles:*\n\n";
+            hoja.Detalles.forEach((detalle, index) => {
+                const direccion = detalle.Direccion_Entrega || "No especificada";
+                const localidad = detalle.Localidad || "No especificada";
+                const cliente = detalle.Cliente || "Sin nombre";
+                const vendedor = detalle.Vendedor || "Sin vendedor";
+                const telefono = detalle.Telefono?.trim() || detalle.Telefono_vendedor?.trim() || "Sin teléfono";
+                const comprobante = `${detalle.Comprobante?.Letra || ''} ${detalle.Comprobante?.Punto_Venta || ''}-${detalle.Comprobante?.Numero || ''}`.trim();
 
-    // Mostrar los nuevos destinos disponibles
-    let mensaje = "*🧭 Destinos disponibles:*\n\n";
-    hoja.Detalles.forEach((detalle, index) => {
-        const direccion = detalle.Direccion_Entrega || "No especificada";
-        const localidad = detalle.Localidad || "No especificada";
-        const cliente = detalle.Cliente || "Sin nombre";
-        const vendedor = detalle.Vendedor || "Sin vendedor";
-        const telefono = detalle.Telefono || detalle.Telefono_vendedor || "Sin teléfono";
+                mensaje += `${index + 1}. 🏢 *Cliente:* ${cliente}\n`;
+                mensaje += `   📞 *Celular:* ${telefono}\n`;
+                mensaje += `   📍 *Dirección:* ${direccion}\n`;
+                mensaje += `   🌆 *Localidad:* ${localidad}\n`;
+                mensaje += `   👤 *Vendedor:* ${vendedor}\n`;
+                mensaje += `   🧾 *Comprobante:* ${comprobante || "No informado"}\n\n`;
+            });
 
-        mensaje += `*${index + 1}.* 🏢 *Cliente:* ${cliente}\n`;
-        mensaje += `   📍 *Dirección:* ${direccion}\n`;
-        mensaje += `   🌆 *Localidad:* ${localidad}\n`;
-        mensaje += `   👤 *Vendedor:* ${vendedor}\n`;
-        mensaje += `   📞 *Teléfono:* ${telefono}\n\n`;
-    });
+            mensaje += "🚛 *Por favor indicá cuál será tu próxima entrega.*";
+            await enviarMensaje(`${choferTelefono}@s.whatsapp.net`, mensaje);
 
-    mensaje += "🚛 *Elegí tu próximo destino y manos a la obra*";
-    await enviarMensaje(choferTelefono + "@s.whatsapp.net", mensaje);
-
-    FlowManager.setFlow(userId, "ENTREGACHOFER", "PrimeraEleccionEntrega", hojaRuta);
-    break;
+            FlowManager.setFlow(userId, "ENTREGACHOFER", "PrimeraEleccionEntrega", hojaRuta);
+            break;
 
         default:
             await enviarMensaje(userId, "Disculpá, no entendí tu elección. Por favor respondé nuevamente.");

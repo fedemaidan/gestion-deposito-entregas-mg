@@ -42,32 +42,34 @@ async function EnviarSiguienteEntrega(choferNumero, hojaRuta) {
         // ✅ Si no quedan entregas pendientes
         if (hoja.Detalles.length === 0) {
             console.log("✅ Todas las entregas han sido completadas.");
-            await enviarMensaje(choferNumero,
-                `📦 *Completaste todas las entregas.*\n¿Querés cerrar la hoja de ruta o modificar alguna entrega?\n\n 1️⃣ Finalizar hoja de ruta\n 2️⃣ Modificar entrega anterior`
-            );
+
+            const mensajeFinal = `📦 *Completaste todas las entregas.*\n¿Querés cerrar la hoja de ruta o modificar alguna entrega?\n\n1️⃣ Finalizar hoja de ruta\n2️⃣ Modificar estado de entregas realizadas`;
+
+            await enviarMensaje(choferNumero, mensajeFinal);
             await FlowManager.setFlow(choferNumero, "ENTREGACHOFER", "TerminarEntregas", hojaRuta);
             return;
         }
 
         // 📋 Listado de entregas pendientes
-        let mensaje = `📋 *Listado de Entregas Pendientes*\n\n`;
+let mensaje = `📋 *Listado de Entregas Pendientes*\n\n`;
 
-        hoja.Detalles.forEach((detalle, index) => {
-            const direccion = detalle.Direccion_Entrega || "No especificada";
-            const localidad = detalle.Localidad || "No especificada";
-            const cliente = detalle.Cliente || "Sin nombre";
-            const vendedor = detalle.Vendedor || "Sin vendedor";
-            const telefono = detalle.Telefono || detalle.Telefono_vendedor || "Sin teléfono";
+hoja.Detalles.forEach((detalle, index) => {
+    const direccion = detalle.Direccion_Entrega || "No especificada";
+    const localidad = detalle.Localidad || "No especificada";
+    const cliente = detalle.Cliente || "Sin nombre";
+    const vendedor = detalle.Vendedor || "Sin vendedor";
+    const telefono = detalle.Telefono?.trim() || detalle.Telefono_vendedor?.trim() || "Sin teléfono";
+    const comprobante = `${detalle.Comprobante?.Letra || ''} ${detalle.Comprobante?.Punto_Venta || ''}-${detalle.Comprobante?.Numero || ''}`.trim();
 
-            mensaje += `*${index + 1}.* 🏢 *Cliente:* ${cliente}\n`;
-            mensaje += `   📍 *Dirección:* ${direccion}\n`;
-            mensaje += `   🌆 *Localidad:* ${localidad}\n`;
-            mensaje += `   👤 *Vendedor:* ${vendedor}\n`;
-            mensaje += `   📞 *Teléfono:* ${telefono}\n\n`;
-        });
+    mensaje += `${index + 1}. 🏢 *Cliente:* ${cliente}\n`;
+    mensaje += `   📞 *Celular:* ${telefono}\n`;
+    mensaje += `   📍 *Dirección:* ${direccion}\n`;
+    mensaje += `   🌆 *Localidad:* ${localidad}\n`;
+    mensaje += `   👤 *Vendedor:* ${vendedor}\n`;
+    mensaje += `   🧾 *Comprobante:* ${comprobante || "No informado"}\n\n`;
+});
 
-
-        mensaje += "\n🚛 *Elegí tu próximo destino y manos a la obra* \n🛠️ ¿Querés cambiar algo? Respondé con *MODIFICAR* o *CORREGIR*.";
+mensaje += "🚛 *Por favor indicá cuál será tu próxima entrega.*\n\n🛠️ ¿Querés cambiar el estado de alguna de las entregas ya realizadas? Respondé con *MODIFICAR*.";
 
         await enviarMensaje(`${Chofer.Telefono}@s.whatsapp.net`, mensaje);
 
