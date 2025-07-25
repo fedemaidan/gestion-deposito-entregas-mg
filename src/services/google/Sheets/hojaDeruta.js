@@ -1,8 +1,8 @@
-// hojaDeruta.js
-const { updateRow } = require("../General"); // ajustá el path si es otro
+const { updateRow } = require("../General");
 const moment = require("moment-timezone");
 require('dotenv').config();
 const { google } = require('googleapis');
+const enviarMensaje = require("../../EnviarMensaje/EnviarMensaje");
 
 const auth = new google.auth.GoogleAuth({
     credentials: JSON.parse(process.env.GOOGLE_CREDENTIALS),
@@ -11,53 +11,22 @@ const auth = new google.auth.GoogleAuth({
 
 const sheets = google.sheets({ version: 'v4', auth });
 
-
-async function IndicarActual(idCabecera, idDetalle) {
-    const sheetId = process.env.GOOGLE_SHEET_ID;
-
+// ✅ Función auxiliar
+async function notificarChoferError(hojaRuta, mensaje) {
     try {
-        // Obtener la hoja de detalles
-        const detalleRes = await sheets.spreadsheets.values.get({
-            spreadsheetId: sheetId,
-            range: 'Detalle!A1:Z',
-        });
-
-        const detalleData = detalleRes.data.values;
-        const headersDet = detalleData[0];
-
-        // Buscar la fila que coincide con ID_CAB e ID_DET
-        const filaDetalle = detalleData.slice(1).find(row => row[0] === idCabecera && row[1] === idDetalle);
-
-        if (!filaDetalle) {
-            throw new Error(`No se encontró el detalle con ID_CAB = ${idCabecera} y ID_DET = ${idDetalle}`);
+        const telefono = hojaRuta?.Chofer?.Telefono;
+        if (!telefono) {
+            console.warn("⚠️ No se pudo enviar el mensaje: teléfono del chofer no disponible.");
+            return;
         }
-
-        // Obtener índice de la columna "Estado" (suponiendo que es la columna 14, columna 'N')
-        const estadoIndex = headersDet.indexOf('Estado');
-        if (estadoIndex === -1) {
-            throw new Error('No se encontró la columna "Estado"');
-        }
-
-        // Actualizar la celda en la columna "Estado" con "ACTUAL"
-        filaDetalle[estadoIndex] = 'ACTUAL';
-
-        // Actualizar la hoja de Google con el nuevo valor
-        await sheets.spreadsheets.values.update({
-            spreadsheetId: sheetId,
-            range: `Detalle!A${detalleData.indexOf(filaDetalle) + 1}:Z${detalleData.indexOf(filaDetalle) + 1}`,
-            valueInputOption: 'RAW',
-            resource: {
-                values: [filaDetalle]
-            }
-        });
-
-        console.log(`✅ Se actualizó el estado de la fila con ID_CAB = ${idCabecera} y ID_DET = ${idDetalle} a "ACTUAL"`);
-    } catch (error) {
-        console.error('❌ Error al actualizar el estado:', error.message);
+        const jid = telefono.includes('@s.whatsapp.net') ? telefono : `${telefono}@s.whatsapp.net`;
+        await enviarMensaje(jid, mensaje);
+    } catch (err) {
+        console.error("❌ Error al notificar al chofer:", err.message);
     }
 }
 
-async function obtenerHojaRutaPorID(idCabecera) {
+async function obtenerHojaRutaPorID(idCabecera, hojaderuta) {
     const sheetId = process.env.GOOGLE_SHEET_ID;
 
     try {
@@ -82,7 +51,8 @@ async function obtenerHojaRutaPorID(idCabecera) {
         const filaCab = cabeceraData.find(row => row[0] === idCabecera);
 
         if (!filaCab) {
-            throw new Error(`No se encontró la cabecera con ID_CAB = ${idCabecera}`);
+            console.warn(msg)
+            return null;
         }
 
         // Formatear como objeto la cabecera
@@ -110,17 +80,61 @@ async function obtenerHojaRutaPorID(idCabecera) {
     }
 }
 
+
+async function IndicarActual(idCabecera, idDetalle, hojaderuta) {
+    const sheetId = process.env.GOOGLE_SHEET_ID;
+    try {
+        const detalleRes = await sheets.spreadsheets.values.get({
+            spreadsheetId: sheetId,
+            range: 'Detalle!A1:Z',
+        });
+
+        const detalleData = detalleRes.data.values;
+        const headersDet = detalleData[0];
+
+        const filaDetalle = detalleData.slice(1).find(row => row[0] === idCabecera && row[1] === idDetalle);
+
+        if (!filaDetalle) {
+            const msg = `⚠️ No se encontró el detalle con ID_CAB = *${idCabecera}* e ID_DET = *${idDetalle}*. Es posible que haya sido eliminado del Sheet.`;
+            console.warn(msg);
+            await notificarChoferError(hojaderuta, msg);
+            return;
+        }
+
+        const estadoIndex = headersDet.indexOf('Estado');
+        if (estadoIndex === -1) {
+            throw new Error('No se encontró la columna "Estado"');
+        }
+
+        filaDetalle[estadoIndex] = 'ACTUAL';
+
+        await sheets.spreadsheets.values.update({
+            spreadsheetId: sheetId,
+            range: `Detalle!A${detalleData.indexOf(filaDetalle) + 1}:Z${detalleData.indexOf(filaDetalle) + 1}`,
+            valueInputOption: 'RAW',
+            resource: {
+                values: [filaDetalle]
+            }
+        });
+
+        console.log(`✅ Se actualizó el estado de la fila con ID_CAB = ${idCabecera} y ID_DET = ${idDetalle} a "ACTUAL"`);
+    } catch (error) {
+        console.error('❌ Error al actualizar el estado:', error.message);
+        await notificarChoferError(hojaderuta, `❌ Error al actualizar estado del detalle *${idDetalle}*: ${error.message}, Contacta a logistica`);
+    }
+}
+
 async function actualizarDetalleActual(hojaRuta) {
     const sheetId = process.env.GOOGLE_SHEET_ID;
     const data = hojaRuta.Hoja_Ruta[0];
-    const detalle = data.Detalle_Actual[0]; // Solo uno, como dijiste
+    const detalle = data.Detalle_Actual[0];
 
     if (!detalle) {
         console.log('No hay Detalle_Actual para actualizar.');
         return;
     }
 
-    if (typeof detalle.Path !== 'string' || detalle.Path.trim().toLowerCase() === 'null' || detalle.Path.trim().toLowerCase() === 'undefined' || detalle.Path.trim() === '') {
+    if (typeof detalle.Path !== 'string' || ['null', 'undefined', ''].includes(detalle.Path.trim().toLowerCase())) {
         detalle.Path = '';
     }
 
@@ -144,9 +158,13 @@ async function actualizarDetalleActual(hojaRuta) {
         detalle.Path
     ];
 
-    await updateRow(sheetId, valoresDetalle, 'Detalle!A1:Z', 1, detalle.ID_DET); // ID_DET en columna B (índice 1)
-
-    console.log(`Detalle actualizado para ID_DET: ${detalle.ID_DET}`);
+    try {
+        await updateRow(sheetId, valoresDetalle, 'Detalle!A1:Z', 1, detalle.ID_DET);
+        console.log(`Detalle actualizado para ID_DET: ${detalle.ID_DET}`);
+    } catch (error) {
+        console.error(`❌ Error al actualizar detalle ${detalle.ID_DET}:`, error.message);
+        await notificarChoferError(hojaRuta, `❌ No se pudo actualizar la entrega *${detalle.ID_DET}*. Contactá a logistica. \nFaltante detalle o ID_cab.`);
+    }
 }
 
 async function actualizarHoraSalidaCabecera(hojaRuta) {
@@ -166,13 +184,18 @@ async function actualizarHoraSalidaCabecera(hojaRuta) {
         hojaRuta.Chofer?.Nombre || '',
         hojaRuta.Chofer?.Patente || '',
         hojaRuta.Chofer?.Telefono || '',
-        horaActual, // Hora Salida
+        horaActual,
         data.Cerrado ? 'TRUE' : 'FALSE',
-        '' // Print
+        ''
     ];
 
-    await updateRow(sheetId, valoresCabecera, 'Cabecera!A1:Z', 0, data.ID_CAB);
-    console.log(`🕒 Hora de salida actualizada: ${horaActual}`);
+    try {
+        await updateRow(sheetId, valoresCabecera, 'Cabecera!A1:Z', 0, data.ID_CAB);
+        console.log(`🕒 Hora de salida actualizada: ${horaActual}`);
+    } catch (error) {
+        console.error('❌ Error al actualizar hora de salida:', error.message);
+        await notificarChoferError(hojaRuta, `❌ No se pudo registrar la hora de salida de la hoja *${data.ID_CAB}*. Falta Id_cab`);
+    }
 }
 
 async function cerrarHojaDeRuta(hojaRuta) {
@@ -184,7 +207,6 @@ async function cerrarHojaDeRuta(hojaRuta) {
     }
 
     try {
-        // Traer cabecera para ubicar fila y columnas
         const cabeceraRes = await sheets.spreadsheets.values.get({
             spreadsheetId: sheetId,
             range: 'Cabecera!A1:Z',
@@ -203,10 +225,9 @@ async function cerrarHojaDeRuta(hojaRuta) {
             throw new Error(`❌ No se encontró columna "Cerrado"`);
         }
 
-        const letraColumna = colToLetter(colCerrado + 1); // +1 porque A = 1
+        const letraColumna = String.fromCharCode(65 + colCerrado); // A = 65
         const celda = `Cabecera!${letraColumna}${filaIndex + 1}`;
 
-        // Actualizar solo esa celda
         await sheets.spreadsheets.values.update({
             spreadsheetId: sheetId,
             range: celda,
@@ -219,6 +240,7 @@ async function cerrarHojaDeRuta(hojaRuta) {
         console.log(`✅ Cerrado actualizado en ${celda}`);
     } catch (error) {
         console.error('❌ Error al cerrar hoja de ruta:', error.message);
+        await notificarChoferError(hojaRuta, `❌ No se pudo cerrar la hoja de ruta *${data.ID_CAB}* correctamente. Conctacte a logistica`);
     }
 }
 
@@ -267,6 +289,7 @@ async function ResetDetalleHoja(hojaRuta) {
             console.log(`🔁 Detalle reseteado: ${detalle.ID_DET}`);
         } catch (err) {
             console.error(`❌ Error al resetear detalle ${detalle.ID_DET}:`, err.message);
+            await notificarChoferError(hojaRuta, `❌ No se pudo restablecer la entrega *${detalle.ID_DET}*. Verificá con logistica.`);
         }
     }
 

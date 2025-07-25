@@ -7,7 +7,6 @@ const EnviarSiguienteEntrega = require("../../../Utiles/Funciones/Chofer/EnviarS
 module.exports = async function ModificarEntrega(userId, message) {
   try {
 
-
     await FlowManager.getFlow(userId);
     const hojaRuta = FlowManager.userFlows[userId]?.flowData;
 
@@ -20,6 +19,7 @@ module.exports = async function ModificarEntrega(userId, message) {
       {
       await enviarMensaje(userId, "🚫 Modificación cancelada. Volviendo al menú")
       EnviarSiguienteEntrega(userId, hojaRuta);
+      return;
       }
 
     if (!hojaRuta || !hojaRuta.Hoja_Ruta || hojaRuta.Hoja_Ruta.length === 0) {
@@ -29,11 +29,6 @@ module.exports = async function ModificarEntrega(userId, message) {
 
     const hoja = hojaRuta.Hoja_Ruta[0];
     const completadas = hoja.Detalles_Completados || [];
-
-    if (isNaN(eleccion)) {
-      await enviarMensaje(userId, "⚠️ Por favor, respondé con un número válido de la entrega a modificar.");
-      return;
-    }
 
     const indice = parseInt(eleccion) - 1;
     if (indice < 0 || indice >= completadas.length) {

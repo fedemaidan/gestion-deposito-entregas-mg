@@ -27,7 +27,7 @@ module.exports = async function ConfirmarSigEntrega(userId, message) {
                 '1️⃣ Entregado OK ✅\n2️⃣ Entregado NOK ⚠️\n3️⃣ No entregado ❌\n4️⃣ Reprogramado 🔁'
             );
 
-            await IndicarActual(hoja.ID_CAB, detalleSeleccionado.ID_DET);
+            await IndicarActual(hoja.ID_CAB, detalleSeleccionado.ID_DET,hojaRuta);
 
             if (detalleSeleccionado.Telefono) {
                 const telefonoCliente = detalleSeleccionado.Telefono;

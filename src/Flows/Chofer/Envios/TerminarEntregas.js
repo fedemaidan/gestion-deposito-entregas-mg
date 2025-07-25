@@ -20,7 +20,9 @@ module.exports = async function TerminarEntregas(userId, message) {
 
     switch (data.data.Eleccion) {
       case 1: // Finalizar
-        const mensajeFinalizado = `✅ *Todas las entregas han sido completadas.* 🚚✨\nGracias por tu trabajo, ¡hasta la próxima!`;
+        const mensajeFinalizado = `✅ Completaste con todas las entregas asignadas.
+        💡 Recordá retornar a base todos los comprobantes de esta hoja de ruta. ¡Hasta mañana!
+        🚛✨`;
         await enviarMensaje(userId, mensajeFinalizado);
 
         const telefonoLogistica = await leerTelefonoLogistica(ID_CAB);
@@ -48,16 +50,18 @@ module.exports = async function TerminarEntregas(userId, message) {
         }
 
         let mensajeMod = "*📋 Entregas completadas disponibles para modificar:*\n";
+
         completadas.forEach((det, index) => {
           const comprobante = det.Comprobante?.Letra && det.Comprobante?.Punto_Venta && det.Comprobante?.Numero
             ? `${det.Comprobante.Letra} ${det.Comprobante.Punto_Venta}-${det.Comprobante.Numero}`
             : "--";
+          const estado = det.Estado || "Sin estado";
 
-          mensajeMod += `\n*${index + 1}.* 🆔 ${det.ID_DET} - 🏢 ${det.Cliente} - 📄 ${comprobante}`;
+          mensajeMod += `\n${index + 1}. 🆔 ${det.ID_DET} - 🏢 ${det.Cliente} - 📄 ${comprobante} - Estado: ${estado}`;
         });
 
-        mensajeMod += `\n\n📌 *Respondé con el número de la entrega que querés modificar.*`;
-
+        mensajeMod += `\n\n📌 *Respondé con el número de la entrega que querés modificar o CANCELAR para volver al listado anterior sin modificar nada.*`;
+        
         await enviarMensaje(userId, mensajeMod);
 
         hojaRuta.entregasCompletadas = completadas;

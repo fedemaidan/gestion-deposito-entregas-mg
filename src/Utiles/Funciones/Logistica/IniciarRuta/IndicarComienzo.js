@@ -95,43 +95,53 @@ async function enviarMensajesAVendedores(Detalles, Chofer, userId) {
     const patenteCamion = Chofer?.Patente || "No especificada";
 
     for (const det of Detalles) {
-        const nombre = det.Vendedor;
-        const telefono = det.Telefono_vendedor;
+        const nombre = det.Vendedor?.trim();
+        const telefono = det.Telefono_vendedor?.trim();
         const cliente = det.Cliente;
         const comprobante = `${det.Comprobante?.Letra || ''} ${det.Comprobante?.Punto_Venta || ''}-${det.Comprobante?.Numero || ''}`;
         const celularCliente = det.Telefono?.trim() || "Sin número";
 
-        if (telefono) {
-            if (!entregasPorVendedor[telefono]) {
-                entregasPorVendedor[telefono] = {
-                    nombre,
+        if (nombre) {
+            if (!entregasPorVendedor[nombre]) {
+                entregasPorVendedor[nombre] = {
+                    telefono,
                     entregas: []
                 };
             }
-            entregasPorVendedor[telefono].entregas.push({
+            entregasPorVendedor[nombre].entregas.push({
                 cliente,
                 comprobante,
                 celularCliente
             });
-        } else if (nombre && !notificadosFaltantes.has(`${nombre}-${cliente}`)) {
-            const mensajeFaltante = `⚠️ El vendedor *${nombre}* no tiene teléfono asignado en la hoja de ruta para el cliente *${cliente}*.\nSe procederá sin notificación al vendedor.`;
+
+            // Actualizar teléfono si antes estaba vacío
+            if (!entregasPorVendedor[nombre].telefono && telefono) {
+                entregasPorVendedor[nombre].telefono = telefono;
+            }
+
+        } else if (!notificadosFaltantes.has(cliente)) {
+            const mensajeFaltante = `⚠️ No se pudo identificar al vendedor para el cliente *${cliente}*.`;
             await enviarMensaje(userId, mensajeFaltante);
-            notificadosFaltantes.add(`${nombre}-${cliente}`);
+            notificadosFaltantes.add(cliente);
         }
     }
 
-    for (const [telefono, data] of Object.entries(entregasPorVendedor)) {
+    for (const [nombre, data] of Object.entries(entregasPorVendedor)) {
         const entregasTexto = data.entregas.map(e =>
             `* 🏢 ${e.cliente} - 📄 ${e.comprobante} - 📞 Celular: ${e.celularCliente}`
         ).join("\n");
 
-        const mensaje = `📌 Hola *${data.nombre}*. Ya está en proceso el envío de tus entregas para los siguientes clientes:\n${entregasTexto}\n\n🚚 Información del transporte:\n👤 *Chofer:* ${nombreChofer}\n📞 *Teléfono del chofer:* ${telefonoChofer}\n🚛 *Patente del camión:* ${patenteCamion}`;
+        const mensaje = `📌 Hola *${nombre}*. Ya está en proceso el envío de tus entregas para los siguientes clientes:\n${entregasTexto}\n\n🚚 Información del transporte:\n👤 *Chofer:* ${nombreChofer}\n📞 *Teléfono del chofer:* ${telefonoChofer}\n🚛 *Patente del camión:* ${patenteCamion}`;
 
-        try {
-            await enviarMensaje(`${telefono}@s.whatsapp.net`, mensaje);
-        } catch (err) {
-            console.error(`❌ Error al enviar mensaje a ${data.nombre}:`, err);
-            await enviarMensaje(userId, `⚠️ No se pudo notificar al vendedor *${data.nombre}*.`);
+        if (data.telefono) {
+            try {
+                await enviarMensaje(`${data.telefono}@s.whatsapp.net`, mensaje);
+            } catch (err) {
+                console.error(`❌ Error al enviar mensaje a ${nombre}:`, err);
+                await enviarMensaje(userId, `⚠️ No se pudo notificar al vendedor *${nombre}*.`);
+            }
+        } else {
+            await enviarMensaje(userId, `⚠️ No se pudo enviar mensaje a *${nombre}* porque no tiene teléfono asignado.`);
         }
     }
 }
