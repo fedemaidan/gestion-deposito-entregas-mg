@@ -55,11 +55,13 @@ module.exports = async function Reprogramado(userId, message) {
         await enviarMensaje(userId, "🔁 La entrega fue marcada como *reprogramada*.");
 
         // Vendedor
-        const mensajeVendedor = `🔁 *ATENCIÓN:* La siguiente entrega fue *REPROGRAMADA*.
+        const nombreVendedor = detalle.Vendedor || "Vendedor sin nombre";
+const mensajeVendedor = `🔁 *ATENCIÓN ${nombreVendedor}:* La siguiente entrega fue *REPROGRAMADA*.
 👤 *Cliente:* ${detalle.Cliente}
 🧾 *Comprobante:* ${comprobante}
 📌 *Dirección:* ${detalle.Direccion_Entrega || "No especificada"}
 👷‍♂️ *Chofer:* ${nombreChofer}
+🧑‍💼 *Vendedor a cargo:* ${nombreVendedor}
 📝 *Motivo:* ${aclaracion}
 📞 *Acción:* Comunicarse con el cliente para dar aviso que su entrega se replanifica`;
 

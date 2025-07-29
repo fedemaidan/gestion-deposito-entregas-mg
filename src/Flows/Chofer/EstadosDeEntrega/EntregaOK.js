@@ -56,19 +56,23 @@ module.exports = async function EntregaOK(userId, message) {
 
 
         // Vendedor
-        if (detalle.Telefono_vendedor) {
-            const jidVendedor = `${detalle.Telefono_vendedor}@s.whatsapp.net`;
-            const comprobante = `${detalle.Comprobante?.Letra || ''} ${detalle.Comprobante?.Punto_Venta || ''}-${detalle.Comprobante?.Numero || ''}`;
+       if (detalle.Telefono_vendedor) {
+    const jidVendedor = `${detalle.Telefono_vendedor}@s.whatsapp.net`;
+    const comprobante = `${detalle.Comprobante?.Letra || ''} ${detalle.Comprobante?.Punto_Venta || ''}-${detalle.Comprobante?.Numero || ''}`;
+    const nombreVendedor = detalle.Vendedor || "Vendedor sin nombre";
+    const nombreChofer = hojaRuta.Chofer?.Nombre || "No informado";
 
-            const mensajeVendedor = `✅ *Entrega realizada con éxito:*
+    const mensajeVendedor = `✅ *Entrega realizada con éxito*
+🧑‍💼 *Vendedor a cargo:* ${nombreVendedor}
 👤 *Cliente:* ${detalle.Cliente}
 🧾 *Comprobante:* ${comprobante}
 📌 *Dirección:* ${detalle.Direccion_Entrega || "No especificada"}
-👷‍♂️ *Chofer:* ${hojaRuta.Chofer?.Nombre || "No informado"}`;
+👷‍♂️ *Chofer:* ${nombreChofer}
+`;
 
-            await enviarMensaje(jidVendedor, mensajeVendedor);
-            await enviarRemitoWhatsApp(webUrl.imagenlocal, jidVendedor);
-        }
+    await enviarMensaje(jidVendedor, mensajeVendedor);
+    await enviarRemitoWhatsApp(webUrl.imagenlocal, jidVendedor);
+}
 
         // Chofer
           const mensajeChofer = "✅ Foto del comprobante  recibido y guardado correctamente.";

@@ -13,6 +13,10 @@ class FlowMapper {
                     await IniciarRutaFlow.Handle(userId, message, flow.currentStep, messageType);
                     break;
 
+                case 'SITUACIONHDR':
+                    await IniciarRutaFlow.Handle(userId, message, flow.currentStep, messageType);
+                    break;
+
                 case 'ENTREGACHOFER':
                     await IniciarEntregaFlow.Handle(userId, message, flow.currentStep, messageType);
                     break;

@@ -62,31 +62,35 @@ module.exports = async function EntregaNOK(userId, message) {
         }
 
         // ✅ VENDEDOR
-        if (detalle.Telefono_vendedor) {
-            const jidVendedor = `${detalle.Telefono_vendedor}@s.whatsapp.net`;
-            let mensajeVendedor;
+if (detalle.Telefono_vendedor) {
+    const jidVendedor = `${detalle.Telefono_vendedor}@s.whatsapp.net`;
+    let mensajeVendedor;
 
-            if (detalle.Estado === "No Entregado") {
-                mensajeVendedor = `❌ *ATENCIÓN:* La siguiente entrega fue marcada como *NO ENTREGADO*.
+    const nombreVendedor = detalle.Vendedor || "Vendedor sin nombre";
+
+    if (detalle.Estado === "No Entregado") {
+        mensajeVendedor = `❌ *ATENCIÓN ${nombreVendedor}:* La siguiente entrega fue marcada como *NO ENTREGADO*.
 👤 *Cliente:* ${detalle.Cliente}
 🧾 *Comprobante:* ${comprobante}
 📌 *Dirección:* ${detalle.Direccion_Entrega || "No especificada"}
 👷‍♂️ *Chofer:* ${nombreChofer}
+🧑‍💼 *Vendedor a cargo:* ${nombreVendedor}
 📝 *Aclaración del chofer:* ${aclaracion}
 📞 *Acción:* Comunicarse con el cliente para replanificar entrega`;
-            } else {
-                mensajeVendedor = `⚠️ *ATENCIÓN:* La siguiente entrega fue marcada como *ENTREGADO NOK*.
+    } else {
+        mensajeVendedor = `⚠️ *ATENCIÓN ${nombreVendedor}:* La siguiente entrega fue marcada como *ENTREGADO NOK*.
 👤 *Cliente:* ${detalle.Cliente}
 🧾 *Comprobante:* ${comprobante}
 📌 *Dirección:* ${detalle.Direccion_Entrega || "No especificada"}
 👷‍♂️ *Chofer:* ${nombreChofer}
+🧑‍💼 *Vendedor a cargo:* ${nombreVendedor}
 📝 *Aclaración del chofer:* ${aclaracion}
 📞 *Acción:* Comunicarse con el cliente para validar la falla y replanificar entrega`;
-            }
+    }
 
-            await enviarMensaje(jidVendedor, mensajeVendedor);
-            await enviarRemitoWhatsApp(webUrl.imagenlocal, jidVendedor);
-        }
+    await enviarMensaje(jidVendedor, mensajeVendedor);
+    await enviarRemitoWhatsApp(webUrl.imagenlocal, jidVendedor);
+}
 
         // 🔄 Actualizar hoja
         await actualizarDetalleActual(hojaRuta);

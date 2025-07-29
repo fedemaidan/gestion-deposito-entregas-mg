@@ -80,7 +80,8 @@ module.exports = async function ModificarEntrega(userId, message) {
     }
 
     if (telefonoVendedor) {
-      const mensajeVendedor = `📢 El estado de una entrega ya realizada *fue modificado* por el chofer del cliente *${entregaSeleccionada.Cliente}*.`;
+      const nombreVendedor = entregaSeleccionada.Vendedor || "Vendedor sin nombre";
+      const mensajeVendedor = `📢 *ATENCIÓN ${nombreVendedor}:* El estado de una entrega ya realizada *fue modificado* por el chofer del cliente *${entregaSeleccionada.Cliente}*.`;
       await enviarMensaje(`${telefonoVendedor}@s.whatsapp.net`, mensajeVendedor);
     } else {
       console.warn(`⚠️ Teléfono del vendedor no disponible para la entrega ${entregaSeleccionada.ID_DET}`);

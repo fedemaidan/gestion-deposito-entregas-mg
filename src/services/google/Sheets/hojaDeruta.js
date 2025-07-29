@@ -51,7 +51,7 @@ async function obtenerHojaRutaPorID(idCabecera, hojaderuta) {
         const filaCab = cabeceraData.find(row => row[0] === idCabecera);
 
         if (!filaCab) {
-            console.warn(msg)
+            console.warn(Id_cab_Faltante)
             return null;
         }
 

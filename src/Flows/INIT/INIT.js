@@ -4,6 +4,7 @@ const FlowManager = require('../../FlowControl/FlowManager');
 const { enviarErrorPorWhatsapp } = require("../../services/Excepcion/manejoErrores");
 const enviarMensaje = require("../../services/EnviarMensaje/EnviarMensaje");
 
+
 const defaultFlow = {
     async Init(userId, message, messageType) {
         try {
@@ -20,6 +21,7 @@ const defaultFlow = {
             console.log(JSON.stringify(result, null, 2));
 
             switch (result.accion) {
+                
                 case "Crear ruta":
                     await IniciarRutaFlow.start(userId, { data: result.data });
                     break;
@@ -33,6 +35,11 @@ Si necesitás contactar a nuestro equipo de ventas, por favor comunicate a nuest
 📍 *San Vicente:* +54 9 11 4402-8710
 📍 *Tristán Suarez:* +54 9 11 5952-3373`);
                     FlowManager.resetFlow(userId);
+                    break;
+
+                case "Info HDR":
+                    FlowManager.setFlow(userId, "SITUACIONHDR", "obtenerInformacion",result);
+                    await IniciarRutaFlow.Handle(userId, { data: result.data },"obtenerInformacion");
                     break;
 
 

@@ -19,7 +19,7 @@ async function iniciarFlowsClientes(hojaRuta) {
 
         if (telefonoCliente && telefonoVendedor) {
             try {
-                await iniciarFlow(`${telefonoCliente}@s.whatsapp.net`, flow, step, detalle);
+                await iniciarFlow(`${telefonoCliente}@s.whatsapp.net`, flow, step, hojaRuta);
             } catch (error) {
                 console.error(`❌ Error iniciando flow para cliente ${telefonoCliente}:`, error);
             }

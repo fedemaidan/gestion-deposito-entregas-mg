@@ -42,7 +42,7 @@ module.exports = async function IndicarComienzo(hojaRuta, userId) {
 async function enviarMensajesClientes(hojaRuta, userId) {
     const hoja = hojaRuta.Hoja_Ruta[0];
     const { Detalles = [] } = hoja;
-    const nombreChofer = hojaRuta.Chofer?.Nombre?.trim() || "(Chofer no disponible)";
+    const nombreChofer = (hojaRuta.Chofer?.Nombre?.trim().replace(":", "") || "(Chofer no disponible)");
     const patente = hojaRuta.Chofer?.Patente?.trim() || "(Patente no disponible)";
 
     // Fecha dinámica: "jueves 11 de julio"
@@ -60,7 +60,7 @@ async function enviarMensajesClientes(hojaRuta, userId) {
         try {
             if (telefono) {
                 // Mensaje principal
-                const mensaje = `Hola *${nombreCliente}*! 🤖 Soy *metaliA*, asistente virtual de logística de *METALGRANDE*.
+                const mensaje = `¡Hola *${nombreCliente}*! 🤖 Soy *metaliA*, asistente virtual de logística de *METALGRANDE*.
 Tu pedido *${detalle.Comprobante?.Letra || ''}-${detalle.Comprobante?.Punto_Venta || ''}-${detalle.Comprobante?.Numero || ''}* está programado para ser entregado *hoy* 🗓️ en *${detalle.Direccion_Entrega || "(Dirección no disponible)"}*.
 🚚 Entrega a cargo de:
 * Chofer: *${nombreChofer}*

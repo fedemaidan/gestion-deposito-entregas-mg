@@ -66,7 +66,18 @@ module.exports = async function CrearRuta(userId, data) {
         const flowExistente = await FlowService.getFlowByUserId(choferId);
 
         if (flowExistente) {
-            await enviarMensaje(userId, `⚠️ El chofer ${Chofer.Nombre} ya tiene una hoja abierta.`);
+            const conflict = await buscarHojaPorNumero(Chofer.Telefono, require('../../../../../models').Flow);
+
+            let mensajeConflicto = `⚠️ El número *${Chofer.Telefono}* ya participa activamente en otra hoja de ruta.`;
+
+            if (conflict) {
+                mensajeConflicto += `\n\n📄 *ID_CAB:* ${conflict.idCab}`;
+                mensajeConflicto += `\n🔄 *Rol ocupado:* ${conflict.rol}`;
+                mensajeConflicto += `\n📅 *Fecha:* ${conflict.hojaRuta.Hoja_Ruta[0]?.Fecha || "No disponible"}`;
+                mensajeConflicto += `\n🚛 *Chofer:* ${conflict.hojaRuta.Chofer?.Nombre || "Sin nombre"}`;
+            }
+
+            await enviarMensaje(userId, mensajeConflicto);
             FlowManager.resetFlow(userId);
             return;
         }
@@ -103,3 +114,74 @@ module.exports = async function CrearRuta(userId, data) {
         FlowManager.resetFlow(userId);
     }
 };
+
+
+async function buscarHojaPorNumero(numero, Flow) {
+    console.log(`🔍 Buscando número: ${numero}`);
+
+    try {
+        const flows = await Flow.findAll({
+            where: {
+                flow: ["ENTREGACHOFER", "RECIBIRCLIENTE"]
+            }
+        });
+
+        console.log(`📦 Cantidad de flujos encontrados: ${flows.length}`);
+
+        for (const flow of flows) {
+            const data = flow.flowData;
+            const flowTipo = flow.flow;
+
+            console.log(`🔎 Revisando flow tipo: ${flowTipo} - userId: ${flow.userId}`);
+
+            if (!data?.Hoja_Ruta?.length) {
+                console.log("⚠️ flowData sin Hoja_Ruta válida, se saltea.");
+                continue;
+            }
+
+            for (const hoja of data.Hoja_Ruta) {
+                console.log(`🆔 Revisando hoja ID_CAB: ${hoja.ID_CAB}`);
+
+                const telChofer = data.Chofer?.Telefono;
+                const esChofer = telChofer === numero;
+
+                console.log(`📞 Teléfono Chofer: ${telChofer} - ¿Coincide?: ${esChofer}`);
+
+                if (esChofer && flowTipo === "ENTREGACHOFER") {
+                    console.log("✅ Coincidencia como CHOFER");
+                    return {
+                        hojaRuta: data,
+                        rol: 'Chofer',
+                        idCab: hoja.ID_CAB,
+                        telefono: numero,
+                    };
+                }
+
+                const matchCliente = hoja.Detalles?.find(det => {
+                    const tel = det.Telefono;
+                    const coincide = tel === numero;
+                    if (coincide) {
+                        console.log(`✅ Coincidencia como CLIENTE en ID_DET: ${det.ID_DET}`);
+                    }
+                    return coincide;
+                });
+
+                if (matchCliente && flowTipo === "RECIBIRCLIENTE") {
+                    return {
+                        hojaRuta: data,
+                        rol: 'Cliente',
+                        idCab: hoja.ID_CAB,
+                        telefono: numero,
+                    };
+                }
+            }
+        }
+
+        console.log("❌ No se encontró ninguna hoja con ese número como Chofer ni Cliente.");
+        return null;
+    } catch (error) {
+        console.error("💥 Error dentro de buscarHojaPorNumero:", error);
+        return null;
+    }
+}
+

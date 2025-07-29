@@ -5,9 +5,19 @@ const opciones = [
     {
         //permiso: "CREAR_RUTA",
         accion: "Crear ruta",
-        descripcion: "Puesta en marcha por parte del encargado de logística para operar la hoja de ruta.",
+        descripcion: "Puesta en marcha por parte del encargado de logística para operar la hoja de ruta. tipicamente iniciado como *hdr [ID_CAB]*",
         data: {
             id_cab: "Número de ID de la hoja de ruta a la que se hace referencia en el mensaje."
+        }
+    },
+      {
+        //permiso: "Obtener datos",
+        accion: "Info HDR",
+        descripcion: "Se quiere reiniciar la hoja de ruta, por parte del personal de logistica. (pueden ser los 2 datos o 1 solo)",
+        data: 
+        {
+            id_cab: "Número de ID de la hoja de ruta a la que se hace referencia en el mensaje.",
+            telefonoInvolucrado: "Numero de telefono perteneciente a la hoja de ruta"
         }
     },
     {
@@ -22,11 +32,6 @@ const analizarIntencion = async (message, sender) => {
     try {
         const usuario = await obtenerUsuarioPorUserId(sender);
         const permisosUsuario = (usuario?.permisos || []).map(p => p.toUpperCase());
-
-        console.log("😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕")
-        console.log(usuario)
-        console.log(permisosUsuario)
-        console.log("😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕😕")
 
         const opcionesFiltradas = opciones.filter(op => {
             // Opción abierta si no requiere permiso

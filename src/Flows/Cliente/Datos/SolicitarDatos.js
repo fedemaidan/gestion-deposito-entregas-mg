@@ -6,10 +6,24 @@ module.exports = async function SolicitarDatos(userId, message) {
     try {
         await FlowManager.getFlow(userId);
 
-        const detalleSeleccionado = FlowManager.userFlows[userId]?.flowData;
+        const hojaRuta = FlowManager.userFlows[userId]?.flowData;
+
+        if (!hojaRuta || !hojaRuta.Hoja_Ruta?.length) {
+            console.error("❌ Error: No se encontró la hoja de ruta en flowData.");
+            return;
+        }
+
+        const hoja = hojaRuta.Hoja_Ruta[0];
+
+        // Buscar el detalle que le corresponde a este userId
+        const detalleSeleccionado = hoja.Detalles.find(det => {
+            const tel = det.Telefono?.trim();
+            return tel && `${tel}@s.whatsapp.net` === userId;
+        });
 
         if (!detalleSeleccionado) {
-            console.error("❌ Error: Detalle del cliente no disponible en flowData.");
+            console.error("❌ Error: No se encontró un detalle asignado al número actual.");
+            await enviarMensaje(userId, "⚠️ No se encontró una entrega asignada a este número.");
             return;
         }
 
