@@ -14,7 +14,7 @@ module.exports = async function ConfirmarSigEntrega(userId, message) {
             hojaRuta.confirmado = true;
             FlowManager.setFlow(userId, "ENTREGACHOFER", "SecuenciaEntrega", hojaRuta);
 
-            await enviarMensaje(userId, "🚛 Continuamos.");
+            await enviarMensaje(userId, "🚛 Continuamos con la entrega.");
 
             const detalleSeleccionado = hoja?.Detalle_Actual?.[0];
             if (!hoja || !detalleSeleccionado) {
@@ -22,9 +22,20 @@ module.exports = async function ConfirmarSigEntrega(userId, message) {
                 return;
             }
 
-            await enviarMensaje(userId, '¿Desea confirmar pasar a seleccionar el estado de la entrega actual? \n 1.SI \n 2.NO');
+            await enviarMensaje(userId,
+                'Cuando la entrega finalice, indícalo enviando un mensaje con el resultado de la entrega:\n' +
+                '1️⃣ Entregado OK ✅\n2️⃣ Entregado NOK ⚠️\n3️⃣ No entregado ❌\n4️⃣ Reprogramado 🔁'
+            );
 
-            FlowManager.setFlow(userId, "ENTREGACHOFER", "confirmarSigestado", hojaRuta);
+            await IndicarActual(hoja.ID_CAB, detalleSeleccionado.ID_DET,hojaRuta);
+
+            if (detalleSeleccionado.Telefono) {
+                const telefonoCliente = detalleSeleccionado.Telefono;
+                const mensajeCliente = "📦 ¡Tu entrega es la próxima! Asegurate de tener personal para la descarga. ¡Gracias! ";
+                await enviarMensaje(telefonoCliente + "@s.whatsapp.net", mensajeCliente);
+            }
+
+            FlowManager.setFlow(userId, "ENTREGACHOFER", "SecuenciaEntrega", hojaRuta);
             break;
         case 2:
         case 3:

@@ -8,6 +8,8 @@ const ModificarEntrega = require('../Chofer/Envios/ModificarEntrega');
 const ConfirmarSigEntrega = require('../Chofer/Envios/ConfirmarSigEntrega');
 const Bloq = require('../Chofer/HerramientaDeEstado/Bloq');
 const TerminarEntregas = require('../Chofer/Envios/TerminarEntregas');
+const confirmarSigestado = require('./Envios/confirmarSigestado');
+
 const IniciarEntregaSteps =
 {
     PrimeraEleccionEntrega,
@@ -19,6 +21,7 @@ const IniciarEntregaSteps =
     ModificarEntrega,
     ConfirmarSigEntrega,
     Bloq,
-    TerminarEntregas
+    TerminarEntregas,
+    confirmarSigestado
 }
 module.exports = { IniciarEntregaSteps };
