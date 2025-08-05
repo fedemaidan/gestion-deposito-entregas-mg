@@ -2,7 +2,7 @@ const FlowManager = require('../../../FlowControl/FlowManager');
 const AnalizarEstado = require('../../../Utiles/Funciones/Chofer/AnalizarEstado');
 const enviarMensaje = require('../../../services/EnviarMensaje/EnviarMensaje');
 
-module.exports = async function FinalizarEntrega(userId, message) {
+module.exports = async function SecuenciaEntrega(userId, message) {
     try {
         const data = await AnalizarEstado(message);
 
@@ -15,14 +15,15 @@ module.exports = async function FinalizarEntrega(userId, message) {
         }
 
         const hoja = hojaRuta.Hoja_Ruta[0];
-        const { Detalle_Actual = [] } = hoja;
+        const grupoActual = hoja.Grupo_Actual || [];
+        const detalleActual = hoja.Detalle_Actual || [];
 
-        if (Detalle_Actual.length === 0) {
+        const entregaActual = grupoActual.length > 0 ? grupoActual[0] : (detalleActual.length > 0 ? detalleActual[0] : null);
+
+        if (!entregaActual) {
             await enviarMensaje(userId, "⚠️ No hay entrega en curso. Por favor, seleccioná una entrega primero.");
             return;
         }
-
-        const detalle = Detalle_Actual[0];
 
         let nuevoEstado;
         let nextStep;
@@ -61,14 +62,11 @@ module.exports = async function FinalizarEntrega(userId, message) {
                 return;
         }
 
-
-
-
         // Solo actualiza el estado
-        detalle.Estado = nuevoEstado;
+        entregaActual.Estado = nuevoEstado;
 
         // Redireccionar al siguiente paso del flujo
-        FlowManager.setFlow(userId, "ENTREGACHOFER", nextStep, hojaRuta);
+        await FlowManager.setFlow(userId, "ENTREGACHOFER", nextStep, hojaRuta);
 
         console.log(`✅ Estado actualizado a "${nuevoEstado}" y redireccionado al paso ${nextStep}`);
 

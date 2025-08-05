@@ -82,22 +82,49 @@ module.exports = async function CrearRuta(userId, data) {
             return;
         }
 
+        // Encabezado
         let output = `📋 *Detalles de la hoja de ruta seleccionada*\n\n`;
         output += `🆔 *ID:* ${ID_CAB}\n📅 *Fecha:* ${Fecha}\n 🔒 *Estado:* ${Cerrado ? "Cerrado" : "Abierto"}\n`;
         output += `\n🚛 *Chofer:* ${Chofer?.Nombre || "No asignado"}\n📞 *Teléfono:* ${Chofer?.Telefono || "No disponible"}\n🔖 *Patente:* ${Chofer?.Patente || "No disponible"}\n`;
 
         if (Detalles.length > 0) {
             output += `\n📦 *Entregas planificadas (${Detalles.length})*\n━━━━━━━━━━━━━━━━━━\n`;
-            Detalles.forEach((det, index) => {
-                const telefonoVendedor = det.Telefono_vendedor?.trim() || "No especificado";
-                output += `\n📍 *Entrega ${index + 1}*\n`;
-                output += `👤 *Cliente:* ${det.Cliente || "No definido"}\n`;
-                output += `📍 *Dirección:* ${det.Direccion_Entrega || "No disponible"}\n`;
-                output += `🏘️ *Localidad:* ${det.Localidad || "No disponible"}\n`;
-                output += `📄 *Comprobante:* ${det.Comprobante?.Letra || ""}-${det.Comprobante?.Punto_Venta || ""}-${det.Comprobante?.Numero || ""}\n`;
-                output += `📞 *Teléfono Cliente:* ${det.Telefono || "No disponible"}\n`;
-                output += `📞 *Teléfono Vendedor:* ${telefonoVendedor}\n`;
-            });
+
+            // 🔁 AGRUPAR POR (Cliente + Dirección)
+            const grupos = {};
+            for (const det of Detalles) {
+                const cliente = (det.Cliente || "").trim().toLowerCase();
+                const direccion = (det.Direccion_Entrega || "").trim().toLowerCase();
+                const clave = `${cliente}|${direccion}`;
+                if (!grupos[clave]) grupos[clave] = [];
+                grupos[clave].push(det);
+            }
+
+            // 🖨️ Imprimir grupos
+            for (const grupo of Object.values(grupos)) {
+                const head = grupo[0] || {};
+                const cliente = head.Cliente || "No definido";
+                const direccion = head.Direccion_Entrega || "No disponible";
+                const localidad = head.Localidad || "No disponible";
+                const cant = grupo.length;
+
+                output += `\n📦 *Entregas para cliente ${cliente.toUpperCase()}* (${cant} entrega${cant > 1 ? "s" : ""})\n`;
+                output += `📍 *Dirección:* ${direccion}\n`;
+                output += `🏘️ *Localidad:* ${localidad}\n\n`;
+
+                grupo.forEach((det, i) => {
+                    const telefonoVendedor = det.Telefono_vendedor?.trim() || "No especificado";
+                    const comprobante = `${det.Comprobante?.Letra || ""}-${det.Comprobante?.Punto_Venta || ""}-${det.Comprobante?.Numero || ""}`;
+
+                    output += `📄 *Detalle ${i + 1}*\n`;
+                    output += `🆔 *ID_DET:* ${det.ID_DET}\n`;
+                    output += `📄 *Comprobante:* ${comprobante}\n`;
+                    output += `📞 *Teléfono Cliente:* ${det.Telefono || "No disponible"}\n`;
+                    output += `📞 *Teléfono Vendedor:* ${telefonoVendedor}\n\n`;
+                });
+
+                output += `━━━━━━━━━━━━━━━━━━\n`;
+            }
         } else {
             output += `\n⚠️ No hay entregas cargadas en esta hoja.`;
         }
@@ -115,7 +142,6 @@ module.exports = async function CrearRuta(userId, data) {
     }
 };
 
-
 async function buscarHojaPorNumero(numero, Flow) {
     console.log(`🔍 Buscando número: ${numero}`);
 
@@ -126,29 +152,17 @@ async function buscarHojaPorNumero(numero, Flow) {
             }
         });
 
-        console.log(`📦 Cantidad de flujos encontrados: ${flows.length}`);
-
         for (const flow of flows) {
             const data = flow.flowData;
             const flowTipo = flow.flow;
 
-            console.log(`🔎 Revisando flow tipo: ${flowTipo} - userId: ${flow.userId}`);
-
-            if (!data?.Hoja_Ruta?.length) {
-                console.log("⚠️ flowData sin Hoja_Ruta válida, se saltea.");
-                continue;
-            }
+            if (!data?.Hoja_Ruta?.length) continue;
 
             for (const hoja of data.Hoja_Ruta) {
-                console.log(`🆔 Revisando hoja ID_CAB: ${hoja.ID_CAB}`);
-
                 const telChofer = data.Chofer?.Telefono;
                 const esChofer = telChofer === numero;
 
-                console.log(`📞 Teléfono Chofer: ${telChofer} - ¿Coincide?: ${esChofer}`);
-
                 if (esChofer && flowTipo === "ENTREGACHOFER") {
-                    console.log("✅ Coincidencia como CHOFER");
                     return {
                         hojaRuta: data,
                         rol: 'Chofer',
@@ -157,15 +171,7 @@ async function buscarHojaPorNumero(numero, Flow) {
                     };
                 }
 
-                const matchCliente = hoja.Detalles?.find(det => {
-                    const tel = det.Telefono;
-                    const coincide = tel === numero;
-                    if (coincide) {
-                        console.log(`✅ Coincidencia como CLIENTE en ID_DET: ${det.ID_DET}`);
-                    }
-                    return coincide;
-                });
-
+                const matchCliente = hoja.Detalles?.find(det => det.Telefono === numero);
                 if (matchCliente && flowTipo === "RECIBIRCLIENTE") {
                     return {
                         hojaRuta: data,
@@ -177,11 +183,9 @@ async function buscarHojaPorNumero(numero, Flow) {
             }
         }
 
-        console.log("❌ No se encontró ninguna hoja con ese número como Chofer ni Cliente.");
         return null;
     } catch (error) {
         console.error("💥 Error dentro de buscarHojaPorNumero:", error);
         return null;
     }
 }
-

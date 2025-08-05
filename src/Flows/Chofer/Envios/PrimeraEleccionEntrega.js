@@ -16,13 +16,11 @@ module.exports = async function PrimeraEleccionEntrega(userId, message) {
 
         const hoja = hojaRuta.Hoja_Ruta[0];
         const { Detalles = [] } = hoja;
-        const { Chofer } = hojaRuta;
 
         const entregasPendientes = [...Detalles];
-
         const resultado = await OpcionEntrega(message);
 
-        // OPCIÓN MODIFICAR
+        // OPCIÓN MODIFICAR (sin cambios)
         if (resultado.data.Eleccion === "MODIFICAR") {
             await enviarMensaje(userId, "🔄 Procesando...");
 
@@ -53,46 +51,81 @@ module.exports = async function PrimeraEleccionEntrega(userId, message) {
             return;
         }
 
-        // OPCIÓN NÚMERO (SELECCIÓN DE ENTREGA)
-        const numeroPedido = parseInt(resultado.data.Eleccion);
-        const detalleSeleccionado = entregasPendientes[numeroPedido - 1];
+        // OPCIÓN NÚMERO (SELECCIÓN DE ENTREGA agrupada)
+        const numeroGrupo = parseInt(resultado.data.Eleccion);
 
-        if (!detalleSeleccionado) {
+        // Agrupar entregas por destino (cliente + dirección)
+        const grupos = {};
+        for (const detalle of entregasPendientes) {
+            const clave = `${detalle.Cliente?.trim().toLowerCase()}|${detalle.Direccion_Entrega?.trim().toLowerCase()}`;
+            if (!grupos[clave]) grupos[clave] = [];
+            grupos[clave].push(detalle);
+        }
+
+        const gruposArray = Object.values(grupos);
+        const grupoSeleccionado = gruposArray[numeroGrupo - 1];
+
+        if (!grupoSeleccionado || grupoSeleccionado.length === 0) {
             await enviarMensaje(userId, "❌ Número inválido. Por favor, seleccioná un número de entrega válido.");
             return;
         }
 
-        hoja.Detalles = hoja.Detalles.filter(det => det.ID_DET !== detalleSeleccionado.ID_DET);
-        hoja.Detalle_Actual = [detalleSeleccionado];
+        // 🔸 NUEVO: determinar y fijar el codigo_grupo del grupo seleccionado
+        const primerDET = grupoSeleccionado[0];
+        const codigoGrupoSeleccionado = primerDET?.codigo_grupo || "";
+        if (!codigoGrupoSeleccionado) {
+            console.warn("⚠️ Grupo seleccionado sin codigo_grupo en sus DET. No se fijará Codigo_Grupo_Det.");
+        }
 
+        // (opcional) validar consistencia de códigos dentro del grupo
+        const codigosDistintos = new Set(grupoSeleccionado.map(d => d.codigo_grupo || ""));
+        if (codigosDistintos.size > 1) {
+            console.warn("⚠️ Grupo con códigos de grupo distintos:", Array.from(codigosDistintos));
+        }
+
+        // Mover grupo y marcar grupo actual
+        hoja.Detalles = hoja.Detalles.filter(det => !grupoSeleccionado.some(sel => sel.ID_DET === det.ID_DET));
+        hoja.Grupo_Actual = grupoSeleccionado;
+
+        // 🔸 NUEVO: guardar Codigo_Grupo_Det en la hoja
+        hoja.Codigo_Grupo_Det = codigoGrupoSeleccionado;
+        console.log("🆔 Codigo_Grupo_Det seteado:", hoja.Codigo_Grupo_Det);
+
+        // Si es la primera salida, registrar hora
         if (
-            hoja.Detalle_Actual.length === 1 &&
+            hoja.Grupo_Actual.length > 0 &&
             (!hoja.Detalles_Completados || hoja.Detalles_Completados.length === 0)
         ) {
             await actualizarHoraSalidaCabecera(hojaRuta);
         }
 
-        const comprobante = detalleSeleccionado.Comprobante;
+        const comprobante = primerDET.Comprobante;
         const comprobanteTexto = comprobante && comprobante.Letra && comprobante.Punto_Venta && comprobante.Numero
             ? `${comprobante.Letra} ${comprobante.Punto_Venta}-${comprobante.Numero}`
             : "--";
 
-        const mensaje = `📌 Entrega a realizar:
+        let mensaje = `📦 *Entregas a realizar:* (${grupoSeleccionado.length} entrega${grupoSeleccionado.length > 1 ? 's' : ''})\n\n`;
 
-🆔 ID Detalle: ${detalleSeleccionado.ID_DET}
-🏢 Cliente: ${detalleSeleccionado.Cliente}
-📞 Celular: ${detalleSeleccionado.Telefono?.trim() || "Sin número"}
-📍 Dirección: ${detalleSeleccionado.Direccion_Entrega}
-🌆 Localidad: ${detalleSeleccionado.Localidad}
-📄 Comprobante: ${comprobanteTexto}`;
+        mensaje += `🏢 *Cliente:* ${primerDET.Cliente}\n`;
+        mensaje += `📞 *Celular:* ${primerDET.Telefono?.trim() || "Sin número"}\n`;
+        mensaje += `📍 *Dirección:* ${primerDET.Direccion_Entrega}\n`;
+        mensaje += `🌆 *Localidad:* ${primerDET.Localidad}\n\n`;
 
-        await enviarMensaje(userId, mensaje);
+        grupoSeleccionado.forEach((det, index) => {
+            const comprobanteTextoDet = det.Comprobante && det.Comprobante.Letra && det.Comprobante.Punto_Venta && det.Comprobante.Numero
+                ? `${det.Comprobante.Letra} ${det.Comprobante.Punto_Venta}-${det.Comprobante.Numero}`
+                : "--";
 
-        // Paso siguiente: confirmación con timeout
+            mensaje += `🔹 *DETALLE ${index + 1}*\n`;
+            mensaje += `   🆔 *ID Detalle:* ${det.ID_DET}\n`;
+            mensaje += `   👤 *Vendedor:* ${det.Vendedor || "No informado"}\n`;
+            mensaje += `   🧾 *Comprobante:* ${comprobanteTextoDet}\n\n`;
+        });
+
+        // Paso siguiente: confirmación con timeout (sin cambios de texto)
         hojaRuta.confirmado = false;
-        FlowManager.setFlow(userId, "ENTREGACHOFER", "ConfirmarSigEntrega", hojaRuta);
+        await FlowManager.setFlow(userId, "ENTREGACHOFER", "ConfirmarSigEntrega", hojaRuta);
 
-        // ⚠️ Aquí aún usamos sock solo para el timeout que lo necesita internamente
         timeOutConfirmacion(userId);
 
         const mensajeconfirmacion = `📌 Por favor, confirmá tu próxima entrega respondiendo con:
@@ -100,10 +133,9 @@ module.exports = async function PrimeraEleccionEntrega(userId, message) {
         2️⃣ No, cambiar.
         ⏳ Si no se recibe una respuesta en los próximos 5 minutos, la entrega será confirmada automáticamente.`;
 
-
         await enviarMensaje(userId, mensajeconfirmacion);
 
-        console.log("✅ Detalle movido a Detalle_Actual.");
+        console.log("✅ Grupo movido a Grupo_Actual.");
 
     } catch (error) {
         console.error("❌ Error en PrimeraEleccionEntrega:", error);

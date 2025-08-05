@@ -26,11 +26,11 @@ async function notificarChoferError(hojaRuta, mensaje) {
     }
 }
 
-async function obtenerHojaRutaPorID(idCabecera, hojaderuta) {
+async function obtenerHojaRutaPorID(idCabecera) {
     const sheetId = process.env.GOOGLE_SHEET_ID;
 
     try {
-        const [cabeceraRes, detalleRes] = await Promise.all([
+        const [cabeceraRes, detalleRes, nominaRes, vehiculosRes] = await Promise.all([
             sheets.spreadsheets.values.get({
                 spreadsheetId: sheetId,
                 range: 'Cabecera!A1:Z',
@@ -38,41 +38,74 @@ async function obtenerHojaRutaPorID(idCabecera, hojaderuta) {
             sheets.spreadsheets.values.get({
                 spreadsheetId: sheetId,
                 range: 'Detalle!A1:Z',
+            }),
+            sheets.spreadsheets.values.get({
+                spreadsheetId: sheetId,
+                range: 'TB_NOMINA!A1:Z',
+            }),
+            sheets.spreadsheets.values.get({
+                spreadsheetId: sheetId,
+                range: 'TB_VEHICULOS!A1:Z',
             })
         ]);
 
-        const cabeceraData = cabeceraRes.data.values;
-        const detalleData = detalleRes.data.values;
+        const cabeceraData = cabeceraRes.data.values || [];
+        const detalleData  = detalleRes.data.values || [];
+        const nominaData   = nominaRes.data.values || [];
+        const vehData      = vehiculosRes.data.values || [];
+
+        if (!cabeceraData.length || !detalleData.length) {
+            throw new Error('Cabecera o Detalle sin datos');
+        }
 
         const headersCab = cabeceraData[0];
         const headersDet = detalleData[0];
+        const headersNom = nominaData[0] || [];
+        const headersVeh = vehData[0] || [];
 
         // Buscar la fila que coincide con el ID_CAB
         const filaCab = cabeceraData.find(row => row[0] === idCabecera);
-
         if (!filaCab) {
-            console.warn(Id_cab_Faltante)
+            console.warn('Id_cab_Faltante');
             return null;
         }
 
-        // Formatear como objeto la cabecera
+        // Cabecera como objeto
         const cabecera = {};
         headersCab.forEach((header, i) => {
             cabecera[header] = filaCab[i] || '';
         });
 
-        // Filtrar los detalles que tienen ese mismo ID_CAB
+        // Detalles con ese ID_CAB
         const detalles = detalleData.slice(1)
             .filter(row => row[0] === idCabecera)
             .map(row => {
-                const detalleObj = {};
+                const obj = {};
                 headersDet.forEach((header, i) => {
-                    detalleObj[header] = row[i] || '';
+                    obj[header] = row[i] || '';
                 });
-                return detalleObj;
+                return obj;
             });
 
-        return { cabecera, detalles };
+        // TB_NOMINA como array de objetos
+        const nomina = nominaData.slice(1).map(row => {
+            const obj = {};
+            headersNom.forEach((header, i) => {
+                obj[header] = row[i] || '';
+            });
+            return obj;
+        });
+
+        // TB_VEHICULOS como array de objetos
+        const vehiculos = vehData.slice(1).map(row => {
+            const obj = {};
+            headersVeh.forEach((header, i) => {
+                obj[header] = row[i] || '';
+            });
+            return obj;
+        });
+
+        return { cabecera, detalles, nomina, vehiculos };
 
     } catch (error) {
         console.error('Error al obtener hoja de ruta:', error.message);

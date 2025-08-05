@@ -3,82 +3,166 @@ const opcionElegida = require("../../../Utiles/Chatgpt/opcionElegida");
 const enviarMensaje = require("../../../services/EnviarMensaje/EnviarMensaje");
 const { IndicarActual } = require("../../../services/google/Sheets/hojaDeruta");
 
-module.exports = async function ConfirmarSigEntrega(userId, message) {
-    await FlowManager.getFlow(userId);
-    const hojaRuta = FlowManager.userFlows[userId]?.flowData;
-    const data = await opcionElegida(message);
-    const hoja = hojaRuta?.Hoja_Ruta?.[0];
+// Helpers locales
+function esPendiente(d) {
+  return (!d?.Estado || String(d.Estado).trim() === "") && !d?.Tiene_Estado;
+}
 
-    switch (data.data.Eleccion) {
-        case 1:
-            hojaRuta.confirmado = true;
-            FlowManager.setFlow(userId, "ENTREGACHOFER", "SecuenciaEntrega", hojaRuta);
+function formatearComprobante(comp = {}) {
+  const { Letra, Punto_Venta, Numero } = comp || {};
+  return (Letra && Punto_Venta && Numero) ? `${Letra} ${Punto_Venta}-${Numero}` : "--";
+}
 
-            await enviarMensaje(userId, "🚛 Continuamos con la entrega.");
+/** Revierte selección: devuelve Detalle_Actual a Detalles, limpia grupo */
+function revertirSeleccion(hoja) {
+  const actuales    = Array.isArray(hoja?.Detalle_Actual) ? hoja.Detalle_Actual : [];
+  const grupo       = Array.isArray(hoja?.Grupo_Actual)   ? hoja.Grupo_Actual   : [];
+  const existentes  = Array.isArray(hoja?.Detalles)       ? hoja.Detalles       : [];
 
-            const detalleSeleccionado = hoja?.Detalle_Actual?.[0];
-            if (!hoja || !detalleSeleccionado) {
-                await enviarMensaje(userId, "⚠️ No se encontró la entrega actual. Intentá de nuevo o contactá soporte.");
-                return;
-            }
+  // Usamos Map para evitar duplicados por ID_DET
+  const map = new Map();
+  for (const d of existentes) map.set(d.ID_DET, d);
+  for (const d of actuales)   if (d && !map.has(d.ID_DET)) map.set(d.ID_DET, d);
+  for (const d of grupo)      if (d && !map.has(d.ID_DET)) map.set(d.ID_DET, d);
 
-            await enviarMensaje(userId,
-                'Cuando la entrega finalice, indícalo enviando un mensaje con el resultado de la entrega:\n' +
-                '1️⃣ Entregado OK ✅\n2️⃣ Entregado NOK ⚠️\n3️⃣ No entregado ❌\n4️⃣ Reprogramado 🔁'
-            );
+  hoja.Detalles = Array.from(map.values());
 
-            await IndicarActual(hoja.ID_CAB, detalleSeleccionado.ID_DET,hojaRuta);
+  // Limpiar selección actual y de grupo
+  hoja.Detalle_Actual = [];
+  hoja.Grupo_Actual   = [];
+  hoja.Codigo_Grupo_Det = "";
+}
 
-            if (detalleSeleccionado.Telefono) {
-                const telefonoCliente = detalleSeleccionado.Telefono;
-                const mensajeCliente = "📦 ¡Tu entrega es la próxima! Asegurate de tener personal para la descarga. ¡Gracias! ";
-                await enviarMensaje(telefonoCliente + "@s.whatsapp.net", mensajeCliente);
-            }
+/** Envía listado agrupado (cliente+dirección) con SOLO pendientes */
+async function enviarListadoAgrupado(hojaRuta) {
+  const hoja = hojaRuta?.Hoja_Ruta?.[0];
+  const chofer = hojaRuta?.Chofer;
+  const { ID_CAB } = hoja || {};
+  const pendientes = (hoja?.Detalles || []).filter(esPendiente);
 
-            FlowManager.setFlow(userId, "ENTREGACHOFER", "SecuenciaEntrega", hojaRuta);
-            break;
-        case 2:
-        case 3:
-            await enviarMensaje(userId, "🔀 Seleccionaste *cambiar destino*");
+  const entregasPorDestino = {};
+  for (const det of pendientes) {
+    const clave = `${(det.Cliente || "").trim().toLowerCase()}|${(det.Direccion_Entrega || "").trim().toLowerCase()}`;
+    if (!entregasPorDestino[clave]) entregasPorDestino[clave] = [];
+    entregasPorDestino[clave].push(det);
+  }
 
-            const choferTelefono = hojaRuta.Chofer?.Telefono;
-            if (!hoja || !choferTelefono) {
-                await enviarMensaje(userId, "⚠️ No se pudo recuperar la hoja de ruta o el número del chofer.");
-                return;
-            }
+  let mensaje = `🚛 Hola *${chofer?.Nombre || "Chofer"}*. Fuiste asignado a la Hoja de Ruta *${ID_CAB || "--"}* que incluye las siguientes entregas:\n\n`;
 
-            // Devolver la entrega actual al listado
-            if (hoja.Detalle_Actual && hoja.Detalle_Actual.length > 0) {
-                hoja.Detalles.unshift(...hoja.Detalle_Actual);
-                hoja.Detalle_Actual = [];
-            }
+  for (const grupo of Object.values(entregasPorDestino)) {
+    const head = grupo[0] || {};
+    const cliente   = head.Cliente || "Sin nombre";
+    const celular   = (head.Telefono || "").toString().trim() || "Sin teléfono";
+    const direccion = head.Direccion_Entrega || "No especificada";
+    const localidad = head.Localidad || "No especificada";
+    const cant = grupo.length;
 
-            // Mostrar los nuevos destinos disponibles
-            let mensaje = "🧭 *Destinos disponibles:*\n\n";
-            hoja.Detalles.forEach((detalle, index) => {
-                const direccion = detalle.Direccion_Entrega || "No especificada";
-                const localidad = detalle.Localidad || "No especificada";
-                const cliente = detalle.Cliente || "Sin nombre";
-                const vendedor = detalle.Vendedor || "Sin vendedor";
-                const telefono = detalle.Telefono?.trim() || detalle.Telefono_vendedor?.trim() || "Sin teléfono";
-                const comprobante = `${detalle.Comprobante?.Letra || ''} ${detalle.Comprobante?.Punto_Venta || ''}-${detalle.Comprobante?.Numero || ''}`.trim();
+    mensaje += `📦 *Entregas a ${cliente}:* (${cant} entrega${cant > 1 ? "s" : ""}):\n`;
+    mensaje += `*Datos generales:*\n`;
+    mensaje += `   🏢 *Cliente:* ${cliente}\n`;
+    mensaje += `   📞 *Celular:* ${celular}\n`;
+    mensaje += `   📍 *Dirección:* ${direccion}\n`;
+    mensaje += `   🌆 *Localidad:* ${localidad}\n\n`;
 
-                mensaje += `${index + 1}. 🏢 *Cliente:* ${cliente}\n`;
-                mensaje += `   📞 *Celular:* ${telefono}\n`;
-                mensaje += `   📍 *Dirección:* ${direccion}\n`;
-                mensaje += `   🌆 *Localidad:* ${localidad}\n`;
-                mensaje += `   👤 *Vendedor:* ${vendedor}\n`;
-                mensaje += `   🧾 *Comprobante:* ${comprobante || "No informado"}\n\n`;
-            });
+    grupo.forEach((d, idx) => {
+      mensaje += `🔹 *DETALLE ${idx + 1}*\n`;
+      mensaje += `   👤 *Vendedor ${idx + 1}:* ${d.Vendedor || "Sin vendedor"}\n`;
+      mensaje += `   🧾 *Comprobante:* ${formatearComprobante(d.Comprobante)}\n\n`;
+    });
 
-            mensaje += "🚛 *Por favor indicá cuál será tu próxima entrega.*";
-            await enviarMensaje(`${choferTelefono}@s.whatsapp.net`, mensaje);
+    mensaje += `-------------------------------------\n`;
+  }
 
-            FlowManager.setFlow(userId, "ENTREGACHOFER", "PrimeraEleccionEntrega", hojaRuta);
-            break;
+  mensaje += `🚛 Por favor indicá el *número del detalle* de la entrega a realizar.\n\n🛠️ Si necesitás cambiar el estado de una entrega ya realizada, respondé con *MODIFICAR*.`;
 
-        default:
-            await enviarMensaje(userId, "Disculpá, no entendí tu elección. Por favor respondé nuevamente.");
-            break;
+  await enviarMensaje(`${hojaRuta?.Chofer?.Telefono}@s.whatsapp.net`, mensaje);
+}
+
+module.exports = async function confirmarSigestado(userId, message) {
+  await FlowManager.getFlow(userId);
+  const hojaRuta = FlowManager.userFlows[userId]?.flowData;
+
+  const data = await opcionElegida(message);
+  const hoja = hojaRuta?.Hoja_Ruta?.[0];
+
+  switch (data.data.Eleccion) {
+    case 1: {
+      hojaRuta.confirmado = true;
+
+      const codigoGrupoActual =
+        hoja?.Codigo_Grupo_Det ||
+        hoja?.Grupo_Actual?.[0]?.codigo_grupo ||
+        "";
+
+      if (!codigoGrupoActual) {
+        await enviarMensaje(userId, "❌ No se encontró un grupo seleccionado.");
+        return;
+      }
+
+      const grupoActual = Array.isArray(hoja?.Grupo_Actual) ? hoja.Grupo_Actual : [];
+      // Próximo pendiente del mismo grupo
+      const siguienteDet = grupoActual.find(det =>
+        (det?.codigo_grupo || "") === codigoGrupoActual && esPendiente(det)
+      );
+
+      if (!siguienteDet) {
+        await enviarMensaje(userId, "🏁 No quedan entregas pendientes en este grupo. Te muestro el listado general.");
+        // Limpio selección de grupo y muestro lista general
+        revertirSeleccion(hoja); // (por si había algo en Detalle_Actual)
+        await FlowManager.setFlow(userId, "ENTREGACHOFER", "PrimeraEleccionEntrega", hojaRuta);
+        await enviarListadoAgrupado(hojaRuta);
+        return;
+      }
+
+      // Setear Detalle_Actual con ese DET
+      hoja.Detalle_Actual = [siguienteDet];
+
+      await FlowManager.setFlow(userId, "ENTREGACHOFER", "SecuenciaEntrega", hojaRuta);
+
+      // Mensaje de detalle
+      const compTexto = formatearComprobante(siguienteDet.Comprobante);
+      const mensajeDetalle =
+        "📦 *Entrega a realizar:*\n\n" +
+        `🆔 *ID Detalle:* ${siguienteDet.ID_DET || "--"}\n` +
+        `🏢 *Cliente:* ${siguienteDet.Cliente || "--"}\n` +
+        `📞 *Celular:* ${(siguienteDet.Telefono || "").toString().trim() || "Sin número"}\n` +
+        `📍 *Dirección:* ${siguienteDet.Direccion_Entrega || "--"}\n` +
+        `🌆 *Localidad:* ${siguienteDet.Localidad || "--"}\n` +
+        `👤 *Vendedor:* ${siguienteDet.Vendedor || "No informado"}\n` +
+        `📄 *Comprobante:* ${compTexto}`;
+
+      await enviarMensaje(userId, "🚛 Continuamos con la entrega.");
+      await enviarMensaje(userId, mensajeDetalle);
+      await enviarMensaje(
+        userId,
+        'Cuando la entrega finalice, indícalo enviando un mensaje con el resultado de la entrega:\n' +
+        '1️⃣ Entregado OK ✅\n2️⃣ Entregado NOK ⚠️\n3️⃣ No entregado ❌\n4️⃣ Reprogramado 🔁'
+      );
+
+      await IndicarActual(hoja.ID_CAB, siguienteDet.ID_DET, hojaRuta);
+
+      if (siguienteDet.Telefono) {
+        const tel = siguienteDet.Telefono;
+        const msjCli = "📦 ¡Tu entrega es la próxima! Asegurate de tener personal para la descarga. ¡Gracias!";
+        await enviarMensaje(`${tel}@s.whatsapp.net`, msjCli);
+      }
+      break;
     }
+
+    // ❌ NO / cambiar destino → revertir selección y mostrar listado agrupado
+    case 2:
+    case 3: {
+      revertirSeleccion(hoja);
+
+      await enviarMensaje(userId, "🔀 Seleccionaste *cambiar destino*.");
+      await enviarListadoAgrupado(hojaRuta);
+
+      await FlowManager.setFlow(userId, "ENTREGACHOFER", "PrimeraEleccionEntrega", hojaRuta);
+      break;
+    }
+
+    default:
+      await enviarMensaje(userId, "Disculpá, no entendí tu elección. Por favor respondé nuevamente.");
+      break;
+  }
 };
