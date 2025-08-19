@@ -5,7 +5,7 @@ const opcion =
     accion: "telefono",
     data:
     {
-        Telefono: "Aqui va el telefono formateado o la palabra ERROR si el numero era invalido como numero de telefono"
+        Telefono: "Aqui va el telefono formateado o la palabra vacia osea comillas vacias si el numero era invalido como numero de telefono"
     }
 }
 async function formatearTelefono(mensajeCliente) {
@@ -17,7 +17,7 @@ async function formatearTelefono(mensajeCliente) {
 
     Advertencia:
     - Si el usuario proporciona un número de teléfono, este debe ser formateado eliminando cualquier carácter no numérico y asegurando que tenga el prefijo internacional correcto.
-    - Si el usuario no proporciona un número de teléfono válido, se debe devolver en la estructura del json dada en el apartado "Telefono:" la palabra ERROR.
+    - Si el usuario no proporciona un número de teléfono válido, se debe devolver en la estructura del json dada en el apartado "Telefono:" la palabra vacia "".
     -Si el telefono tiene mas 13 digitos, se debe devolver la palabra ERROR.
 
 
