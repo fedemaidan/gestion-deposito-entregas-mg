@@ -127,11 +127,27 @@ module.exports = async function PrimeraEleccionEntrega(userId, message) {
         await FlowManager.setFlow(userId, "ENTREGACHOFER", "ConfirmarSigEntrega", hojaRuta);
 
         timeOutConfirmacion(userId);
+        const proximoDet =
+            grupoSeleccionado.find(d => (!d?.Estado || String(d.Estado).trim() === "") && !d?.Tiene_Estado)
+            || grupoSeleccionado[0];
 
-        const mensajeconfirmacion = `📌 Por favor, confirmá tu próxima entrega respondiendo con:
-        1️⃣ Sí, confirmar.
-        2️⃣ No, cambiar.
-        ⏳ Si no se recibe una respuesta en los próximos 5 minutos, la entrega será confirmada automáticamente.`;
+        const compProx = (proximoDet?.Comprobante?.Letra && proximoDet?.Comprobante?.Punto_Venta && proximoDet?.Comprobante?.Numero)
+            ? `${proximoDet.Comprobante.Letra} ${proximoDet.Comprobante.Punto_Venta}-${proximoDet.Comprobante.Numero}`
+            : "--";
+
+        const resumenEntrega =
+            `📌 *Próxima entrega:* ` +
+            `${proximoDet?.Cliente || "--"} | ` +
+            `${proximoDet?.Direccion_Entrega || "--"} | `;
+
+        // Mensaje de confirmación (mantengo tu texto y agrego el resumen arriba)
+        const mensajeconfirmacion =
+            `${resumenEntrega}\n\n` +
+            `📌 Por favor, confirmá tu próxima entrega respondiendo con:\n` +
+            `1️⃣ Sí, confirmar.\n` +
+            `2️⃣ No, cambiar.\n` +
+            `⏳ Si no se recibe una respuesta en los próximos 5 minutos, la entrega será confirmada automáticamente.`;
+
 
         await enviarMensaje(userId, mensajeconfirmacion);
 

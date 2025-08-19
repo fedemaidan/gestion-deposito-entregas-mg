@@ -28,17 +28,31 @@ function norm(v = "") {
 
 // ☎️ Siempre devuelve un string: número formateado o "ERROR"
 async function telefonoFormateadoOrERROR(valor) {
-    console.log(`Formateando teléfono: ${valor}`);
-    const original = (valor ?? "").toString().trim();
-    if (!original) return "";
-    try {
-        const r = await formatearTelefono(original);
-        const tel = r?.data?.Telefono;
-        if (typeof tel === "string" && tel.trim() !== "") return tel.trim();
-        return "";
-    } catch {
-        return "";
-    }
+  console.log(`Formateando teléfono: ${valor}`);
+  const original = (valor ?? "").toString().trim();
+
+  // Si viene vacío, devolvemos vacío (no tocamos nada)
+  if (!original) return "";
+
+  try {
+    const r = await formatearTelefono(original);
+    const telRaw = r?.data?.Telefono;
+
+    // Si la API devolvió exactamente "", conservar ""
+    if (telRaw === "") return "";
+
+    // Si devolvió "ERROR" (por compatibilidad con versiones anteriores), lo convertimos a ""
+    if (typeof telRaw === "string" && telRaw.toUpperCase() === "ERROR") return "";
+
+    // Si llega un string no vacío, lo devolvemos trim
+    if (typeof telRaw === "string" && telRaw.trim() !== "") return telRaw.trim();
+
+    // Cualquier otro caso raro => vacío
+    return "";
+  } catch {
+    // Ante cualquier excepción, devolvemos vacío para no romper el flujo
+    return "";
+  }
 }
 
 async function BuscarHoja(userId, text) {
