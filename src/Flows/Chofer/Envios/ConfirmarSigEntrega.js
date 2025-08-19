@@ -52,9 +52,11 @@ async function enviarListadoAgrupado(hojaRuta) {
     entregasPorDestino[clave].push(det);
   }
 
-  let mensaje = `🚛 Hola *${chofer?.Nombre || "Chofer"}*. Fuiste asignado a la Hoja de Ruta *${ID_CAB || "--"}* que incluye las siguientes entregas:\n\n`;
+  let mensaje = `🚛 Continuamos ?: *${chofer?.Nombre || "Chofer"}*. aun tenes pendientes en la Hoja de Ruta *${ID_CAB || "--"}* que incluye las siguientes entregas:\n\n`;
 
-  for (const grupo of Object.values(entregasPorDestino)) {
+  // 👉 Enumeración de grupos: 📦#1, 📦#2, ...
+  const grupos = Object.values(entregasPorDestino);
+  grupos.forEach((grupo, idx) => {
     const head = grupo[0] || {};
     const cliente   = head.Cliente || "Sin nombre";
     const celular   = (head.Telefono || "").toString().trim() || "Sin teléfono";
@@ -62,21 +64,21 @@ async function enviarListadoAgrupado(hojaRuta) {
     const localidad = head.Localidad || "No especificada";
     const cant = grupo.length;
 
-    mensaje += `📦 *Entregas a ${cliente}:* (${cant} entrega${cant > 1 ? "s" : ""}):\n`;
+    mensaje += `📦#${idx + 1} *Entregas a ${cliente}:* (${cant} entrega${cant > 1 ? "s" : ""}):\n`;
     mensaje += `*Datos generales:*\n`;
     mensaje += `   🏢 *Cliente:* ${cliente}\n`;
     mensaje += `   📞 *Celular:* ${celular}\n`;
     mensaje += `   📍 *Dirección:* ${direccion}\n`;
     mensaje += `   🌆 *Localidad:* ${localidad}\n\n`;
 
-    grupo.forEach((d, idx) => {
-      mensaje += `🔹 *DETALLE ${idx + 1}*\n`;
-      mensaje += `   👤 *Vendedor ${idx + 1}:* ${d.Vendedor || "Sin vendedor"}\n`;
+    grupo.forEach((d, idxDet) => {
+      mensaje += `🔹 *DETALLE ${idxDet + 1}*\n`;
+      mensaje += `   👤 *Vendedor ${idxDet + 1}:* ${d.Vendedor || "Sin vendedor"}\n`;
       mensaje += `   🧾 *Comprobante:* ${formatearComprobante(d.Comprobante)}\n\n`;
     });
 
     mensaje += `-------------------------------------\n`;
-  }
+  });
 
   mensaje += `🚛 Por favor indicá el *número del detalle* de la entrega a realizar.\n\n🛠️ Si necesitás cambiar el estado de una entrega ya realizada, respondé con *MODIFICAR*.`;
 

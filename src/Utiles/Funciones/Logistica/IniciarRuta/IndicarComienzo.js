@@ -120,7 +120,6 @@ async function enviarMensajesAVendedores(Detalles, Chofer, Vehiculo, userId) {
     const letra = String(Letra).trim();
     return `${letra} ${pv}-${nro}`.replace(/\s+/g, " ").trim();
   };
-  const normalizarTel = (t) => (t || "").toString().trim() || "Sin número";
   const formatearDNI = (dni) => {
     const digits = (dni || "").toString().replace(/\D+/g, "");
     return digits ? digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "No informado";
@@ -129,7 +128,7 @@ async function enviarMensajesAVendedores(Detalles, Chofer, Vehiculo, userId) {
   // === Datos del transporte ===
   const nombreChofer   = (Chofer?.Empleado || Chofer?.Nombre || "Chofer no identificado").toString().trim();
   const dniChofer      = formatearDNI(Chofer?.DNI);
-  const telefonoChofer = normalizarTel(Chofer?.Telefono);
+  const telefonoChofer = (Chofer?.Telefono ?? "").toString().trim();
   const patenteCamion  = (Chofer?.Patente || Vehiculo?.Patente || "No especificada").toString().trim();
 
   // ⬅️ Marca/Modelo desde hojaRuta.Vehiculo
@@ -139,10 +138,10 @@ async function enviarMensajesAVendedores(Detalles, Chofer, Vehiculo, userId) {
   // Agrupar entregas por vendedor
   for (const det of (Detalles || [])) {
     const nombreVend = (det.Vendedor || "").trim();
-    const telVend = normalizarTel(det.Telefono_vendedor);
+    const telVend = (det.Telefono_vendedor ?? "").toString().trim();
     const cliente = det.Cliente || "Cliente sin nombre";
     const comprobante = formatearComprobante(det.Comprobante);
-    const celularCliente = normalizarTel(det.Telefono);
+    const celularCliente = (det.Telefono ?? "").toString().trim();
 
     if (!nombreVend) {
       if (!notificadosFaltantes.has(cliente)) {
@@ -168,6 +167,12 @@ async function enviarMensajesAVendedores(Detalles, Chofer, Vehiculo, userId) {
 
   // Enviar un mensaje por vendedor
   for (const [nombreVend, data] of Object.entries(entregasPorVendedor)) {
+    // 👉 Control “como en cliente”: si no hay teléfono, aviso y sigo.
+    if (!data.telefono) {
+      await enviarMensaje(userId, `⚠️ No se pudo enviar mensaje a *${nombreVend}* porque no tiene teléfono asignado.`);
+      continue;
+    }
+
     const entregasTexto = data.entregas.map(e =>
       `* 🏢 ${e.cliente} - 📄 ${e.comprobante} - 📞 Celular: ${e.celularCliente}`
     ).join("\n");
@@ -176,22 +181,18 @@ async function enviarMensajesAVendedores(Detalles, Chofer, Vehiculo, userId) {
 `📌 Hola *${nombreVend}*. Hoy se entregarán los siguientes pedidos:
 ${entregasTexto}
 
-🚚 Información del transporte:
-👤 Chofer: ${nombreChofer}
-🪪 DNI: ${dniChofer}
-📞 Teléfono del chofer: ${telefonoChofer}
-🚛 Patente del camión: ${patenteCamion}
-⚙️ Marca/Modelo: ${marcaFinal} ${modeloFinal}`;
+🚚 *Información del transporte*:
+👤 *Chofer*: ${nombreChofer}
+🪪 *DNI*: ${dniChofer}
+📞 *Teléfono del chofer*: ${telefonoChofer}
+🚛 *Patente del camión*: ${patenteCamion}
+⚙️ *Marca/Modelo*: ${marcaFinal} ${modeloFinal}`;
 
-    if (data.telefono && data.telefono !== "Sin número") {
-      try {
-        await enviarMensaje(`${data.telefono}@s.whatsapp.net`, mensaje);
-      } catch (err) {
-        console.error(`❌ Error al enviar mensaje a ${nombreVend}:`, err);
-        await enviarMensaje(userId, `⚠️ No se pudo notificar al vendedor *${nombreVend}*.`);
-      }
-    } else {
-      await enviarMensaje(userId, `⚠️ No se pudo enviar mensaje a *${nombreVend}* porque no tiene teléfono asignado.`);
+    try {
+      await enviarMensaje(`${data.telefono}@s.whatsapp.net`, mensaje);
+    } catch (err) {
+      console.error(`❌ Error al enviar mensaje a ${nombreVend}:`, err);
+      await enviarMensaje(userId, `⚠️ No se pudo notificar al vendedor *${nombreVend}*.`);
     }
   }
 }
@@ -213,8 +214,9 @@ async function enviarMensajeChofer(Chofer, ID_CAB, Detalles) {
     entregasPorDestino[clave].push(detalle);
   }
 
-  // Construir mensaje por grupo
-  for (const grupo of Object.values(entregasPorDestino)) {
+  // Construir mensaje por grupo con enumeración (#1, #2, ...)
+  const grupos = Object.values(entregasPorDestino);
+  grupos.forEach((grupo, idx) => {
     const encabezado = grupo[0] || {};
     const cliente   = encabezado.Cliente || "Sin nombre";
     const celular   = (encabezado.Telefono || "").toString().trim() || "Sin teléfono";
@@ -224,8 +226,8 @@ async function enviarMensajeChofer(Chofer, ID_CAB, Detalles) {
     const cant = grupo.length || 0;
     const plural = cant === 1 ? "entrega" : "entregas";
 
-    // Título del grupo + datos generales
-    mensaje += `📦 *Entregas a ${cliente}:* (${cant} ${plural}):\n`;
+    // Título del grupo + datos generales (📦#N ...)
+    mensaje += `📦#${idx + 1} *Entregas a ${cliente}:* (${cant} ${plural}):\n`;
     mensaje += `*Datos generales:*\n`;
     mensaje += `   🏢 *Cliente:* ${cliente}\n`;
     mensaje += `   📞 *Celular:* ${celular}\n`;
@@ -246,7 +248,7 @@ async function enviarMensajeChofer(Chofer, ID_CAB, Detalles) {
     });
 
     mensaje += `-------------------------------------\n`;
-  }
+  });
 
   mensaje += `🚛 Por favor indicá el *número del detalle* de la entrega a realizar.`;
 
