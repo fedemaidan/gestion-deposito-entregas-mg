@@ -48,7 +48,7 @@ async function enviarListadoAgrupado(hojaRuta) {
     entregasPorDestino[clave].push(det);
   }
 
-  let mensaje = `🚛 Continuamos ?: *${chofer?.Nombre || "Chofer"}*. aun tenes pendientes en la Hoja de Ruta *${ID_CAB || "--"}* que incluye las siguientes entregas:\n\n`;
+  let mensaje = `🧭 Destinos disponibles:\n`;
 
   // 👉 Enumeración de grupos: 📦#1, 📦#2, ...
   const grupos = Object.values(entregasPorDestino);
@@ -76,7 +76,7 @@ async function enviarListadoAgrupado(hojaRuta) {
     mensaje += `-------------------------------------\n`;
   });
 
-  mensaje += `🚛 Por favor indicá el *número del detalle* de la entrega a realizar.\n\n🛠️ Si necesitás cambiar el estado de una entrega ya realizada, respondé con *MODIFICAR*.`;
+  mensaje += `🚛 Por favor indicá cuál será tu próxima entrega.`;
 
   await enviarMensaje(`${hojaRuta?.Chofer?.Telefono}@s.whatsapp.net`, mensaje);
 }
@@ -122,20 +122,6 @@ module.exports = async function confirmarSigestado(userId, message) {
 
       await FlowManager.setFlow(userId, "ENTREGACHOFER", "SecuenciaEntrega", hojaRuta);
 
-      // Mensaje de detalle
-      const compTexto = formatearComprobante(siguienteDet.Comprobante);
-      const mensajeDetalle =
-        "📦 *Entrega a realizar:*\n\n" +
-        `🆔 *ID Detalle:* ${siguienteDet.ID_DET || "--"}\n` +
-        `🏢 *Cliente:* ${siguienteDet.Cliente || "--"}\n` +
-        `📞 *Celular:* ${(siguienteDet.Telefono || "").toString().trim() || "Sin número"}\n` +
-        `📍 *Dirección:* ${siguienteDet.Direccion_Entrega || "--"}\n` +
-        `🌆 *Localidad:* ${siguienteDet.Localidad || "--"}\n` +
-        `👤 *Vendedor:* ${siguienteDet.Vendedor || "No informado"}\n` +
-        `📄 *Comprobante:* ${compTexto}`;
-
-      await enviarMensaje(userId, "🚛 Continuamos con la entrega.");
-      await enviarMensaje(userId, mensajeDetalle);
       await enviarMensaje(
         userId,
         'Cuando la entrega finalice, indícalo enviando un mensaje con el resultado de la entrega:\n' +

@@ -40,16 +40,18 @@ module.exports = async function IndicarComienzo(hojaRuta, userId) {
 };
 
 async function enviarMensajesClientes(hojaRuta, userId) {
-    const hoja = hojaRuta.Hoja_Ruta[0];
+    const hoja = hojaRuta?.Hoja_Ruta?.[0] || {};
     const { Detalles = [] } = hoja;
-    const nombreChofer = (hojaRuta.Chofer?.Nombre?.trim().replace(":", "") || "(Chofer no disponible)");
-    const patente = hojaRuta.Chofer?.Patente?.trim() || "(Patente no disponible)";
+
+    // 👷 Chofer y vehículo
+    const nombreChofer = (hojaRuta?.Chofer?.Nombre || "").trim().replace(":", "") || "(Chofer no disponible)";
+    const patente = (hojaRuta?.Chofer?.Patente || hojaRuta?.Vehiculo?.Patente || "").trim() || "(Patente no disponible)";
 
     // 🔁 AGRUPAR por (Teléfono + Cliente + Dirección)
     // Para que un mismo cliente reciba UN solo mensaje por dirección.
     const grupos = new Map();
     for (const det of Detalles) {
-        const tel = (det.Telefono || "").trim(); // clave principal: a quién le escribimos
+        const tel = (det.Telefono || "").trim(); // viene formateado por BuscarHoja
         const cliente = (det.Cliente || "").trim().toLowerCase();
         const direccion = (det.Direccion_Entrega || "").trim().toLowerCase();
         const clave = `${tel}|${cliente}|${direccion}`;
@@ -57,15 +59,60 @@ async function enviarMensajesClientes(hojaRuta, userId) {
         grupos.get(clave).push(det);
     }
 
+    // 🛠️ Helpers
+    const buildComprobante = (c) => {
+        const s = `${c?.Letra || ''}-${c?.Punto_Venta || ''}-${c?.Numero || ''}`;
+        return s.replace(/-+/g, '-').replace(/^-|-$/g, '') || '--';
+    };
+    const toUpperSafe = (s) => (s || '').toString().trim().toUpperCase();
+
+    // Elegir vendedor principal del grupo (el más frecuente por nombre; fallback al head)
+    const elegirVendedorPrincipal = (grupo) => {
+        const head = grupo[0] || {};
+        const freq = new Map();
+        for (const d of grupo) {
+            const name = toUpperSafe(d.Vendedor);
+            if (!name) continue;
+            freq.set(name, (freq.get(name) || 0) + 1);
+        }
+        let elegido = null;
+        let max = -1;
+        for (const [name, count] of freq.entries()) {
+            if (count > max) { max = count; elegido = name; }
+        }
+        // Tel del vendedor principal
+        if (elegido) {
+            // busca un detalle que tenga ese vendedor con teléfono no vacío
+            const match = grupo.find(d => toUpperSafe(d.Vendedor) === elegido && (d.Telefono_vendedor || "").trim() !== "");
+            return {
+                nombre: elegido,
+                telefono: (match?.Telefono_vendedor || "").trim() || ""
+            };
+        }
+        // Fallback al primero
+        return {
+            nombre: toUpperSafe(head.Vendedor) || "NO INFORMADO",
+            telefono: (head.Telefono_vendedor || "").trim() || ""
+        };
+    };
+
+    // Sanitizar número visible a JID de WhatsApp: solo dígitos
+    const toWhatsJid = (visible) => {
+        const digits = (visible || "").replace(/\D/g, "");
+        if (!digits) return "";
+        return `${digits}@s.whatsapp.net`;
+    };
+
     for (const [clave, grupo] of grupos.entries()) {
         const head = grupo[0];
-        const telefono = (head.Telefono || "").trim();
+        const telefonoVisible = (head.Telefono || "").trim(); // legible (puede tener +, espacios)
+        const telefonoJid = toWhatsJid(telefonoVisible);
 
-        const nombreCliente = head.Cliente?.trim() || "(Nombre no disponible)";
-        const direccion = head.Direccion_Entrega || "(Dirección no disponible)";
+        const nombreCliente = (head.Cliente || "(Nombre no disponible)").trim();
+        const direccion = (head.Direccion_Entrega || "(Dirección no disponible)").trim();
         const cant = grupo.length;
 
-        if (!telefono) {
+        if (!telefonoVisible || !telefonoJid) {
             const aviso = `⚠️ *Falta número de teléfono del cliente:* "${nombreCliente}" (dirección: "${direccion}"). No se pudo enviar el aviso de ${cant} entrega(s).`;
             await enviarMensaje(userId, aviso);
             continue;
@@ -73,18 +120,23 @@ async function enviarMensajesClientes(hojaRuta, userId) {
 
         // 🧾 Lista de comprobantes (y vendedor) por cada DET del grupo
         const detallesTexto = grupo.map((d, i) => {
-            const c = d.Comprobante || {};
-            const comp = `${c.Letra || ''}-${c.Punto_Venta || ''}-${c.Numero || ''}`.replace(/-+/g, '-').replace(/^-|-$/g, '');
+            const comp = buildComprobante(d.Comprobante);
             const vend = d.Vendedor || "No informado";
             const telVend = (d.Telefono_vendedor || "").trim() || "No disponible";
             return `🔹 *Detalle ${i + 1}*
-   🧾 *Comprobante:* ${comp || "--"}
+   🧾 *Comprobante:* ${comp}
    👤 *Vendedor:* ${vend}
    📞 *Celular vendedor:* ${telVend}`;
         }).join("\n\n");
 
+        // 👤 Vendedor principal para el pie
+        const vendPrincipal = elegirVendedorPrincipal(grupo);
+        const vendedorFooterNombre = vendPrincipal.nombre || "NO INFORMADO";
+        const vendedorFooterTel = vendPrincipal.telefono || "No disponible";
+
         const plural = cant > 1;
-        const mensaje = `¡Hola *${nombreCliente}*! 🤖 Soy *metaliA*, asistente virtual de logística de *METALGRANDE*.
+        const mensaje =
+`¡Hola *${nombreCliente}*! 🤖 Soy *metaliA*, asistente virtual de logística de *METALGRANDE*.
 Tu${plural ? 's pedidos están' : ' pedido está'} programado${plural ? 's' : ''} para ser entregado${plural ? 's' : ''} *hoy* 🗓️ en *${direccion}*.
 
 ${detallesTexto}
@@ -93,14 +145,16 @@ ${detallesTexto}
 * Chofer: *${nombreChofer}*
 * Patente: *${patente}*
 
-⚠️ Recordá que debés contar con personal/maquinaria idónea para la descarga del material.
-Si no pudieras recibir, por favor contactá a tu vendedor asignado para reprogramar.`;
+⚠️Recordá que debes contar con personal/maquinaria idónea para la descarga del material.
+En caso de que no puedas recibir tu pedido, por favor contactá a tu vendedor asignado para reprogramar la entrega.
 
-        // ✅ Un solo envío por cliente/dirección
+👤 Vendedor: ${vendedorFooterNombre}
+📞 Celular: ${vendedorFooterTel}`;
+
         try {
-            await enviarMensaje(`${telefono}@s.whatsapp.net`, mensaje);
+            await enviarMensaje(telefonoJid, mensaje);
         } catch (error) {
-            console.error(`🛑 Error al enviar mensaje para ${nombreCliente} (${telefono}):`, error);
+            console.error(`🛑 Error al enviar mensaje para ${nombreCliente} (${telefonoVisible}):`, error);
         }
     }
 

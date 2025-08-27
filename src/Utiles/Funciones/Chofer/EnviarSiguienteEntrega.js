@@ -112,7 +112,7 @@ async function EnviarSiguienteEntrega(choferNumero, hojaRuta) {
       entregasPorDestino[clave].push(det);
     }
 
-    let mensaje = `🚛 Continuamos ?: *${Chofer?.Nombre || "Chofer"}*. aun tenes pendientes en la Hoja de Ruta *${ID_CAB || "--"}* que incluye las siguientes entregas:\n\n`;
+    let mensaje = `📋 Listado de Entregas Pendientes:\n\n`;
 
     // 👉 Enumeración 📦#1, 📦#2, ...
     const grupos = Object.values(entregasPorDestino);

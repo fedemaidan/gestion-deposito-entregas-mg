@@ -52,7 +52,7 @@ async function enviarListadoAgrupado(hojaRuta) {
     entregasPorDestino[clave].push(det);
   }
 
-  let mensaje = `🚛 Continuamos ?: *${chofer?.Nombre || "Chofer"}*. aun tenes pendientes en la Hoja de Ruta *${ID_CAB || "--"}* que incluye las siguientes entregas:\n\n`;
+  let mensaje = `🧭 Destinos disponibles:\n\n`;
 
   // 👉 Enumeración de grupos: 📦#1, 📦#2, ...
   const grupos = Object.values(entregasPorDestino);
@@ -80,7 +80,7 @@ async function enviarListadoAgrupado(hojaRuta) {
     mensaje += `-------------------------------------\n`;
   });
 
-  mensaje += `🚛 Por favor indicá el *número del detalle* de la entrega a realizar.\n\n🛠️ Si necesitás cambiar el estado de una entrega ya realizada, respondé con *MODIFICAR*.`;
+  mensaje += `🚛 Por favor indicá cuál será tu próxima entrega.`;
 
   await enviarMensaje(`${hojaRuta?.Chofer?.Telefono}@s.whatsapp.net`, mensaje);
 }
@@ -95,7 +95,7 @@ module.exports = async function ConfirmarSigEntrega(userId, message) {
   switch (data.data.Eleccion) {
     case 1:
       hojaRuta.confirmado = true;
-      await enviarMensaje(userId, '¿Desea confirmar pasar a seleccionar el estado de la entrega actual? \n 1.SI \n 2.NO');
+      await enviarMensaje(userId, 'Próximo destino confirmado \n 1. Indicar el estado de la entrega \n 2. Cambiar el destino');
       await FlowManager.setFlow(userId, "ENTREGACHOFER", "confirmarSigestado", hojaRuta);
       break;
 

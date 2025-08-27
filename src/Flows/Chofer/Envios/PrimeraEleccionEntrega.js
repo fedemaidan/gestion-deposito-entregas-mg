@@ -135,19 +135,26 @@ module.exports = async function PrimeraEleccionEntrega(userId, message) {
             ? `${proximoDet.Comprobante.Letra} ${proximoDet.Comprobante.Punto_Venta}-${proximoDet.Comprobante.Numero}`
             : "--";
 
-        const resumenEntrega =
-            `📌 *Próxima entrega:* ` +
-            `${proximoDet?.Cliente || "--"} | ` +
-            `${proximoDet?.Direccion_Entrega || "--"} | `;
+   // Mensaje de detalle
+      const compTexto = formatearComprobante(proximoDet.Comprobante);
+      const mensajeDetalle =
+        "📦 *Entrega a realizar:*\n\n" +
+        `🆔 *ID Detalle:* ${proximoDet.ID_DET || "--"}\n` +
+        `🏢 *Cliente:* ${proximoDet.Cliente || "--"}\n` +
+        `📞 *Celular:* ${(proximoDet.Telefono || "").toString().trim() || "Sin número"}\n` +
+        `📍 *Dirección:* ${proximoDet.Direccion_Entrega || "--"}\n` +
+        `🌆 *Localidad:* ${proximoDet.Localidad || "--"}\n` +
+        `👤 *Vendedor:* ${proximoDet.Vendedor || "No informado"}\n` +
+        `📄 *Comprobante:* ${compTexto}`;
+
+      await enviarMensaje(userId, mensajeDetalle);
 
         // Mensaje de confirmación (mantengo tu texto y agrego el resumen arriba)
         const mensajeconfirmacion =
-            `${resumenEntrega}\n\n` +
             `📌 Por favor, confirmá tu próxima entrega respondiendo con:\n` +
             `1️⃣ Sí, confirmar.\n` +
             `2️⃣ No, cambiar.\n` +
             `⏳ Si no se recibe una respuesta en los próximos 5 minutos, la entrega será confirmada automáticamente.`;
-
 
         await enviarMensaje(userId, mensajeconfirmacion);
 
@@ -157,3 +164,8 @@ module.exports = async function PrimeraEleccionEntrega(userId, message) {
         console.error("❌ Error en PrimeraEleccionEntrega:", error);
     }
 };
+
+function formatearComprobante(comp = {}) {
+  const { Letra, Punto_Venta, Numero } = comp || {};
+  return (Letra && Punto_Venta && Numero) ? `${Letra} ${Punto_Venta}-${Numero}` : "--";
+}
