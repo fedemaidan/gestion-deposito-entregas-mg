@@ -21,7 +21,7 @@ module.exports = async function TerminarEntregas(userId, message) {
     switch (data.data.Eleccion) {
       case 1: // Finalizar
         const mensajeFinalizado = `✅ Completaste con todas las entregas asignadas.
-        💡 Recordá retornar a base todos los comprobantes de esta hoja de ruta. ¡Hasta mañana!
+        💡 Recordá retornar a base todos los comprobantes de esta hoja de ruta. ¡Hasta luego!
         🚛✨`;
         await enviarMensaje(userId, mensajeFinalizado);
 

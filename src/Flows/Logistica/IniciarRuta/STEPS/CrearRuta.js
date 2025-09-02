@@ -130,7 +130,7 @@ module.exports = async function CrearRuta(userId, data) {
         }
 
         await enviarMensaje(userId, output);
-        await enviarMensaje(userId, "✅ ¿Desea confirmar la hoja de ruta?\n\n1️⃣ *Sí*, confirmar\n2️⃣ *No*, salir");
+        await enviarMensaje(userId, "✅ ¿Deseas confirmar la hoja de ruta?\n\n1️⃣ *Sí*, confirmar\n2️⃣ *No*, salir");
 
         FlowManager.setFlow(userId, "INICIARRUTA", "ConfirmarOModificarRuta", hojaRuta);
 

@@ -124,7 +124,7 @@ module.exports = async function confirmarSigestado(userId, message) {
 
       await enviarMensaje(
         userId,
-        'Cuando la entrega finalice, indícalo enviando un mensaje con el resultado de la entrega:\n' +
+        'Cuando la entrega finalice, indicalo enviando un mensaje con el resultado de la entrega:\n' +
         '1️⃣ Entregado OK ✅\n2️⃣ Entregado NOK ⚠️\n3️⃣ No entregado ❌\n4️⃣ Reprogramado 🔁'
       );
 

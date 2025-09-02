@@ -10,7 +10,7 @@ module.exports = async function obtenerInformacion(userId, message) {
 
         switch (estado) {
             case "encontrado":
-                const msg2 = `🔁 *¿Qué desea hacer con esta hoja de ruta?*\n\n` +
+                const msg2 = `🔁 *¿Qué deseas hacer con esta hoja de ruta?*\n\n` +
                     `Por favor, elija una opción:\n\n` +
                     `*1.* 🔄 Reiniciar toda la hoja\n[La hoja volverá al estado original]\n\n` +
                     `*2.* 🔓 Liberar roles\n[Solo los telefonos de los involucrados]\n\n` +

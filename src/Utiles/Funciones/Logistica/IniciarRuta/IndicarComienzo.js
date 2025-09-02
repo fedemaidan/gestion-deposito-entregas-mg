@@ -146,10 +146,7 @@ ${detallesTexto}
 * Patente: *${patente}*
 
 ⚠️Recordá que debes contar con personal/maquinaria idónea para la descarga del material.
-En caso de que no puedas recibir tu pedido, por favor contactá a tu vendedor asignado para reprogramar la entrega.
-
-👤 Vendedor: ${vendedorFooterNombre}
-📞 Celular: ${vendedorFooterTel}`;
+En caso de que no puedas recibir tu pedido, por favor contactá a tu vendedor asignado para reprogramar la entrega.`;
 
         try {
             await enviarMensaje(telefonoJid, mensaje);

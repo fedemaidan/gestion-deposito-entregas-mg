@@ -74,6 +74,7 @@ module.exports = async function EntregaNOK(userId, message) {
 🧑‍💼 *Vendedor a cargo:* ${nombreVendedor}
 📝 *Aclaración del chofer:* ${aclaracion}
 📞 *Acción:* Comunicarse con el cliente para replanificar entrega`;
+detalle.Estado = "No Entregado";
       } else {
         mensajeVendedor = `⚠️ *ATENCIÓN ${nombreVendedor}:* La siguiente entrega fue marcada como *ENTREGADO NOK*.
 👤 *Cliente:* ${detalle.Cliente}
@@ -83,6 +84,7 @@ module.exports = async function EntregaNOK(userId, message) {
 🧑‍💼 *Vendedor a cargo:* ${nombreVendedor}
 📝 *Aclaración del chofer:* ${aclaracion}
 📞 *Acción:* Comunicarse con el cliente para validar la falla y replanificar entrega`;
+detalle.Estado = "Entregado NOK";
       }
       await enviarMensaje(jidVendedor, mensajeVendedor);
       await enviarRemitoWhatsApp(webUrl.imagenlocal, jidVendedor);

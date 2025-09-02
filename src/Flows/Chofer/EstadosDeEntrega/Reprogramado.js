@@ -36,10 +36,9 @@ module.exports = async function Reprogramado(userId, message) {
 
         // Guardar motivo de reprogramación
         detalle.Observaciones = message;
-
+        detalle.Estado = "Reprogramado";
         // 🔄 Actualizar hoja en Sheets
         await actualizarDetalleActual(hojaRuta);
-
         hoja.Detalle_Actual = [];
         hoja.Detalles_Completados.push(detalle);
 
@@ -64,6 +63,7 @@ const mensajeVendedor = `🔁 *ATENCIÓN ${nombreVendedor}:* La siguiente entreg
 🧑‍💼 *Vendedor a cargo:* ${nombreVendedor}
 📝 *Motivo:* ${aclaracion}
 📞 *Acción:* Comunicarse con el cliente para dar aviso que su entrega se replanifica`;
+
 
         if (detalle.Telefono_vendedor) {
             await enviarMensaje(`${detalle.Telefono_vendedor}@s.whatsapp.net`, mensajeVendedor);

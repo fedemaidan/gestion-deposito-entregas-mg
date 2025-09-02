@@ -64,6 +64,7 @@ module.exports = async function EntregaOK(userId, message) {
 📌 *Dirección:* ${detalle.Direccion_Entrega || "No especificada"}
 👷‍♂️ *Chofer:* ${nombreChofer}
 `;
+detalle.Estado = "Entregado OK";
             await enviarMensaje(jidVendedor, mensajeVendedor);
             await enviarRemitoWhatsApp(webUrl.imagenlocal, jidVendedor);
         }
