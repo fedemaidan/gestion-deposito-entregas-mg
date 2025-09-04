@@ -140,7 +140,7 @@ async function EnviarSiguienteEntrega(choferNumero, hojaRuta) {
       mensaje += `-------------------------------------\n`;
     });
 
-    mensaje += `🚛 Por favor indicá el *número del detalle* de la entrega a realizar.\n\n🛠️ Si necesitás cambiar el estado de una entrega ya realizada, respondé con *MODIFICAR*.`;
+    mensaje += `🚛 Por favor indicá el *número de entrega* de la entrega a realizar.\n\n🛠️ Si necesitás cambiar el estado de una entrega ya realizada, respondé con *MODIFICAR*.`;
 
     await enviarMensaje(`${Chofer.Telefono}@s.whatsapp.net`, mensaje);
     await FlowManager.setFlow(choferNumero, "ENTREGACHOFER", "PrimeraEleccionEntrega", hojaRuta);

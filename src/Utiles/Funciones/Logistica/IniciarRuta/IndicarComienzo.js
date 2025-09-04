@@ -301,7 +301,7 @@ async function enviarMensajeChofer(Chofer, ID_CAB, Detalles) {
     mensaje += `-------------------------------------\n`;
   });
 
-  mensaje += `🚛 Por favor indicá el *número del detalle* de la entrega a realizar.`;
+  mensaje += `🚛 Por favor indicá el *número de entrega* de la entrega a realizar.`;
 
   await enviarMensaje(`${Chofer.Telefono}@s.whatsapp.net`, mensaje);
 }
